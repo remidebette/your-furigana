@@ -5,15 +5,15 @@
 
 Intermediate learners of Japanese want to be able to read text with chinese characters, the Kanjis.
 
-To help with the pronunciation and meaning of a particular character, the Japanese writing system comes with "Furigana", pronunciation help writen on top of rare Kanji.
+To help with the reading of a particular character, the Japanese writing system comes with "Furigana", pronunciation help written on top of rare Kanji.
 
 Usually, reading text, the delicate situation of the intermediate learner is that he does not want to be reminded of the pronunciations he already knows, 
-as he is trying to master them. But still, Furigana can be a precious tool when one wishes to read real-life Japanese text which never contains only text 
+as he is trying to master them. Still, Furigana can be a precious tool when one wishes to read real-life Japanese text which never contains only text 
 he might know. 
 
-Today, Kanji memorisation apps (such as Wanikani) can provide a list of the currently known Kanji to a user at a certain time.
-With **Your Furigana**, the user can input this as a CSV and copy-paste any Japanese text from the Web to get just the help he 
-needs to move forward.
+Today, Kanji memorisation apps (such as Wanikani) can provide to a user a list of the known Kanji pronunciations at a certain time.
+With **Your Furigana**, the user can input this list as a CSV and copy-paste any Japanese text from the Web to get just the help he 
+needs to read it.
 
 A sample PoC page is deployed [here](http://your-furigana-git-master.remidebette.vercel.app/).  
 This is shared as an example of a Next.js architecture
