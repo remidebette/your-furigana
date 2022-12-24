@@ -124,12 +124,15 @@ async function convert(str, vocab) {
 function JapaneseText({text, vocab}) {
     const [furigana, setFurigana] = useState("");
 
-    useEffect(
-    async () => {
-        const result = await convert(text, vocab);
+    useEffect(() => {
+        const async_effect = async () => {
+            const result = await convert(text, vocab);
 
-        setFurigana(result)
-    },
+            setFurigana(result)
+        }
+        async_effect().catch(console.error)
+    }
+,
     [text])
 
     return (<p lang="ja" className={styles.japanese}>{furigana}</p>)

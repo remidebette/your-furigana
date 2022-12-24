@@ -38,7 +38,6 @@ function MyApp({ Component, pageProps }) {
         <link rel='mask-icon' href='/icons/safari-pinned-tab.svg' color='#5bbad5' />
         <link rel='shortcut icon' href='/icons/favicon.ico' />
         */
-/*<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto:300,400,500' />*//*
 
 
         <meta name='theme-color' content='#000000' />
