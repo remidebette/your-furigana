@@ -1,0 +1,18 @@
+{
+    // .swcrc should be treated as JSONC
+
+    "sourceMaps": "inline",
+
+    "jsc": {
+      "parser": {
+        "syntax": "ecmascript",
+        "jsx": true
+      },
+
+      "transform": {
+        "react": {
+          "runtime": "automatic"
+        }
+      }
+    }
+  }
