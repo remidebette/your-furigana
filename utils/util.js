@@ -1482,24 +1482,28 @@ const getStrType = function (str) {
  */
 const patchTokens = function (tokens) {
     // patch for token structure
-    for (let cr = 0; cr < tokens.length; cr++) {
-        if (hasJapanese(tokens[cr].surface_form)) {
-            if (!tokens[cr].reading) {
-                if (tokens[cr].surface_form.split("").every(isKana)) {
-                    tokens[cr].reading = toRawKatakana(tokens[cr].surface_form);
+    for (const token of tokens) {
+        if (hasJapanese(token.surface_form)) {
+            if (!token.reading) {
+                if (token.surface_form.split("").every(isKana)) {
+                    token.reading = toRawKatakana(token.surface_form);
                 }
                 else {
-                    tokens[cr].reading = tokens[cr].surface_form;
+                    token.reading = token.surface_form;
                 }
             }
-            else if (hasHiragana(tokens[cr].reading)) {
-                tokens[cr].reading = toRawKatakana(tokens[cr].reading);
+            else if (hasHiragana(token.reading)) {
+                token.reading = toRawKatakana(token.reading);
             }
         }
         else {
-            tokens[cr].reading = tokens[cr].surface_form;
+            token.reading = token.surface_form;
         }
     }
+
+    // patch for 日本
+
+
 
     // patch for 助動詞"う" after 動詞
     for (let i = 0; i < tokens.length; i++) {
