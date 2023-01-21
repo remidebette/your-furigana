@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
-import Head from 'next/head'
 import Papa from 'papaparse'
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
 import { Container, Button, Form } from 'react-bootstrap'
 import useForm from "../utils/useForm";
 import {JapaneseText} from "../components/rendered_text"
-import {is_dict_ready} from "../utils/dict"
 
 export default function Home() {
     const initialState = {
@@ -16,11 +16,25 @@ export default function Home() {
     const [hideForm, setHideForm] = useState(false);
     const [vocab, setVocab] = useState(null);
 
+    const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
+    const [isDictReady, setIsDictReady] = useState(false);
 
     const {values, setValues, handleChange, handleSubmit} = useForm(
         initialState,
         () => setHideForm(!hideForm)
     );
+
+    useEffect(() => {
+        const async_init = async () => {
+            console.log("Initializing kuroshiro");
+            const analyzer = new KuromojiAnalyzer({dictPath: "/data/dict"});
+            //const analyzer = new MecabAnalyzer();
+            await kuroshiro.init(analyzer);
+            setIsDictReady(true);
+            console.log("Kuroshiro is ready");
+        }
+        async_init().catch(console.error)
+    }, [])
 
     useEffect(() => {
         const ret = Papa.parse(values.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''));
@@ -79,7 +93,7 @@ export default function Home() {
           </Button>
         </Form>
     <br />
-    {is_dict_ready && <JapaneseText text={values.text} vocab={vocab} />}
+    {isDictReady && <JapaneseText text={values.text} vocab={vocab} kuroshiro={kuroshiro}/>}
     </Container>
     </>
   )

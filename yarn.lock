@@ -3817,6 +3817,13 @@ kuroshiro-analyzer-kuromoji@^1.1.0:
   dependencies:
     kuromoji "^0.1.1"
 
+kuroshiro-analyzer-mecab@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/kuroshiro-analyzer-mecab/-/kuroshiro-analyzer-mecab-1.0.1.tgz#fec5a139af58cd527e7df1a8d94d831942225149"
+  integrity sha512-8QUDoWnRW4VEh1DqnCz6XsRe4/w9GIRco9K/T7ZskhhZGuwMjKQsRuCUF9LDJTuleUJR+bV1iKwctOZ13ajfxA==
+  dependencies:
+    mecab-async "^0.1.2"
+
 kuroshiro@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/kuroshiro/-/kuroshiro-1.2.0.tgz#c393795b1959f776e37ceab2fa9e32a88a7e1dfa"
@@ -3956,6 +3963,13 @@ mdast-util-to-string@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/mdast-util-to-string/-/mdast-util-to-string-3.1.0.tgz#56c506d065fbf769515235e577b5a261552d56e9"
   integrity sha512-n4Vypz/DZgwo0iMHLQL49dJzlp7YtAJP+N07MZHpjPf/5XJuHUWstviF4Mn2jEiR/GNmtnRRqnwsXExk3igfFA==
+
+mecab-async@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/mecab-async/-/mecab-async-0.1.2.tgz#69efb838729216709597a57da2df03922f9b593a"
+  integrity sha512-/hruCkDWB+jM1bYMFM53HLzG6ENKVtC3n45qD1qxQUW99pz3rrsU4HKEqlYPVCr+/wv0ErBR0vNlVwAv92f2Wg==
+  dependencies:
+    shell-quote "*"
 
 merge-stream@^2.0.0:
   version "2.0.0"
@@ -4942,6 +4956,11 @@ shebang-regex@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
+
+shell-quote@*:
+  version "1.7.4"
+  resolved "https://registry.yarnpkg.com/shell-quote/-/shell-quote-1.7.4.tgz#33fe15dee71ab2a81fcbd3a52106c5cfb9fb75d8"
+  integrity sha512-8o/QEhSSRb1a5i7TFR0iM4G16Z0vYB2OQVs4G3aAFXjn3T6yEx8AZxy1PgDF7I00LZHYA3WxaSYIf5e5sAX8Rw==
 
 side-channel@^1.0.4:
   version "1.0.4"

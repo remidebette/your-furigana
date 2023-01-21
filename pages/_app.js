@@ -1,4 +1,4 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
+import '../styles/index.css'
 
 import Head from 'next/head'
 import Link from 'next/link'

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { tokenize, toHiragana } from 'wanakana';
-import {kuroshiro} from "../utils/dict"
 import styles from '../styles/japanese.module.css'
 import {
     ROMANIZATION_SYSTEM,
@@ -33,7 +32,7 @@ function JapaneseChar(char, reading) {
 }
 
 
-async function convert(str, vocab) {
+async function convert(str, vocab, kuroshiro) {
         str = str || "";
 
         let result = [];
@@ -121,19 +120,17 @@ async function convert(str, vocab) {
     }
 
 
-function JapaneseText({text, vocab}) {
+function JapaneseText({text, vocab, kuroshiro}) {
     const [furigana, setFurigana] = useState("");
 
     useEffect(() => {
         const async_effect = async () => {
-            const result = await convert(text, vocab);
+            const result = await convert(text, vocab, kuroshiro);
 
             setFurigana(result)
         }
         async_effect().catch(console.error)
-    }
-,
-    [text])
+    },[text])
 
     return (<p lang="ja" className={styles.japanese}>{furigana}</p>)
 
