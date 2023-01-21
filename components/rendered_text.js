@@ -130,7 +130,7 @@ function JapaneseText({text, vocab, kuroshiro}) {
             setFurigana(result)
         }
         async_effect().catch(console.error)
-    },[text])
+    },[text, vocab])
 
     return (<p lang="ja" className={styles.japanese}>{furigana}</p>)
 
