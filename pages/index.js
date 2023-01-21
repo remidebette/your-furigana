@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react"
-import Papa from 'papaparse'
+import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
 import { Container, Button, Form } from 'react-bootstrap'
 import useForm from "../utils/useForm";
 import {JapaneseText} from "../components/rendered_text"
+import {defaultDict} from "../utils/const";
 
 export default function Home() {
     const initialState = {
         "apiKey": "",
-        "csv": "",
+        "csv": defaultDict,
         "text": ""
     };
     const [hideForm, setHideForm] = useState(false);
@@ -18,6 +19,7 @@ export default function Home() {
 
     const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
     const [isDictReady, setIsDictReady] = useState(false);
+    const { readString } = usePapaParse();
 
     const {values, setValues, handleChange, handleSubmit} = useForm(
         initialState,
@@ -37,13 +39,24 @@ export default function Home() {
     }, [])
 
     useEffect(() => {
-        const ret = Papa.parse(values.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''));
-        let readings = {};
-        for (const row of ret.data) {
-            readings[row[0]] = row[1].split(";")
-        }
+        const csvString = "kanji,reading\n".concat(values.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
+        readString(csvString, {
+            worker: true,
+            header: true,
+            delimiter: ',',
+            complete: (results) => {
+                let readings = {};
+                //console.log(results.errors);
+                for (const row of results.data) {
+                    if ("kanji" in row && "reading" in row) {
+                        readings[row["kanji"]] = row["reading"].split(";")
+                    }
+                }
 
-        setVocab(readings);
+                setVocab(readings);
+            }
+        })
+
     }, [values.csv])
 
   return (
