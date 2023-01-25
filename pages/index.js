@@ -49,7 +49,7 @@ export default function Home() {
                 //console.log(results.errors);
                 for (const row of results.data) {
                     if ("kanji" in row && "reading" in row) {
-                        readings[row["kanji"]] = row["reading"].split(";")
+                        readings[row["kanji"]] = row["reading"]
                     }
                 }
 

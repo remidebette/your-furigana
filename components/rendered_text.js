@@ -43,19 +43,26 @@ async function convert(str, vocab, kuroshiro) {
         {
             for (const token of tokens) {
                 const strType = getStrType(token.surface_form);
+                const hiraganaReading = toRawHiragana(token.reading);
                 switch (strType) {
                     case StrType.KANJI:
-                        if (token.surface_form in vocab) {
+                        if (
+                            token.surface_form in vocab &&
+                            vocab[token.surface_form].split(";").includes(hiraganaReading)
+                        ) {
                             console.log(token.surface_form)
                             result.push(token.surface_form);
                             break;
                         }
-                        result.push(JapaneseChar(token.surface_form, toRawHiragana(token.reading)));
+                        result.push(JapaneseChar(token.surface_form, hiraganaReading));
                         break;
                     case StrType.MIXED:
                         // TODO: better handle the case where all kanjis are in vocab
 
-                        if (token.surface_form in vocab) {
+                        if (
+                            token.surface_form in vocab &&
+                            vocab[token.surface_form].split(";").includes(hiraganaReading)
+                        ) {
                             console.log(token.surface_form)
                             result.push(token.surface_form);
                             break;
@@ -82,7 +89,7 @@ async function convert(str, vocab, kuroshiro) {
                             }
                         }
                         const reg = new RegExp(`^${pattern}$`);
-                        const matches = reg.exec(toRawHiragana(token.reading));
+                        const matches = reg.exec(hiraganaReading);
                         if (matches) {
                             let pickKanji = 1;
                             for (const sub_char of subs) {
@@ -97,7 +104,7 @@ async function convert(str, vocab, kuroshiro) {
                             }
                         }
                         else {
-                            result.push(JapaneseChar(token.surface_form, toRawHiragana(token.reading)));
+                            result.push(JapaneseChar(token.surface_form, hiraganaReading));
                         }
                         break;
                     case StrType.KANA:
