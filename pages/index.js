@@ -11,33 +11,37 @@ import {defaultDict} from "../utils/const";
 import {
     patchTokens
 } from "../utils/util";
-import { VocabContext } from "../components/vocabContext";
+import { VocabContext, vocabReducer } from "../components/vocabContext";
 
 export default function Home() {
+    // Form
     const initialState = {
         "apiKey": "",
         "csv": defaultDict,
         "text": ""
     };
     const [hideForm, setHideForm] = useState(false);
-
-    const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
-    const [isDictReady, setIsDictReady] = useState(false);
-
-    const [tokens, setTokens] = useState([]);
-
-    const [vocab, dispatchVocab] = useReducer(
-        vocabReducer,
-        {}  // Init value
-    );
-    const [furigana, setFurigana] = useState("");
-    const { readString } = usePapaParse();
-
-    const {values, setValues, handleChange, handleSubmit} = useForm(
+    const { values, setValues, handleChange, handleSubmit } = useForm(
         initialState,
         () => setHideForm(!hideForm)
     );
 
+    // Kuroshiro
+    const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
+    const [isDictReady, setIsDictReady] = useState(false);
+
+    // Vocab context
+    const [vocab, dispatchVocab] = useReducer(
+        vocabReducer,
+        {}  // Init value
+    );
+
+    // Text display
+    const [tokens, setTokens] = useState([]);
+    const [furigana, setFurigana] = useState("");
+    const { readString } = usePapaParse();
+
+    // Initialize Kuroshiro
     useEffect(() => {
         const async_init = async () => {
             console.log("Initializing kuroshiro");
@@ -50,6 +54,7 @@ export default function Home() {
         async_init().catch(console.error)
     }, [])
 
+    // Set Vocab Context from Form CSV
     useEffect(() => {
         const csvString = "kanji,reading\n".concat(values.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
         readString(csvString, {
@@ -71,7 +76,7 @@ export default function Home() {
 
     }, [values.csv])
 
-    // Move to parent, separate parsed tokens from furigana to display
+    // Parse main text to Tokens
     useEffect(() => {
         const async_tokens = async () => {
             const rawTokens = await kuroshiro._analyzer.parse(values.text || "");
@@ -82,6 +87,7 @@ export default function Home() {
         async_tokens().catch(console.error)
     }, [values.text])
 
+    // Convert tokens to displayable React components
     useEffect(() => {
         const async_furi = async () => {
             const result = await convert(tokens);
@@ -133,9 +139,12 @@ export default function Home() {
           </Form.Group>
            </>
            }
+          <Form.Group controlId="exampleForm.HideButton">
+
           <Button variant="primary" type="submit" onClick={handleSubmit}>
-            {hideForm ? "Settings" : "Hide Settings"}
+            {hideForm ? "Show Settings" : "Hide Settings"}
           </Button>
+          </Form.Group>
         </Form>
     <br />
     {isDictReady && 
@@ -148,24 +157,4 @@ export default function Home() {
     </Container>
     </>
   )
-}
-
-
-function vocabReducer(vocab, action) {
-    switch (action.type) {
-        case 'reset': {
-            return { ...action.vocab }
-        }
-        case 'add': {
-            return (action.char in vocab) ? { ...vocab, [action.char]: vocab[action.char] + ";" + action.reading } : { ...vocab, [action.char]: action.reading };
-        }
-        case 'delete': {
-            const readings = vocab[action.char].split(";")
-            const newReadings = readings.filter((element) => { element === action.reading })
-            return { ...vocab, [action.char]: newReadings.join(";") }
-        }
-        default: {
-            throw Error('Unknown action: ' + action.type);
-        }
-    }
 }
