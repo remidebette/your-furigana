@@ -11,7 +11,7 @@ import {defaultDict} from "../utils/const";
 import {
     patchTokens
 } from "../utils/util";
-import { VocabContext, vocabReducer } from "../components/vocabContext";
+import { VocabContext } from "../components/vocabContext";
 
 export default function Home() {
     // Form
@@ -32,6 +32,32 @@ export default function Home() {
     // Vocab CSV parsing
     const { readString, jsonToCSV } = usePapaParse();
 
+
+    // TODO: maintain the CSV updated after a change in Vocab
+    function vocabReducer(context, action) {
+        switch (action.type) {
+            case 'set-vocab': {
+                return { vocab: { ...action.vocab }, csv: context.csv }
+            }
+            case 'set-csv': {
+                return { vocab: { ...context.vocab }, csv: action.csv }
+            }
+            case 'add': {
+                const newVocab = (action.char in context.vocab) ? { ...context.vocab, [action.char]: context.vocab[action.char] + ";" + action.reading } : { ...context.vocab, [action.char]: action.reading };
+                return { vocab: newVocab, csv: vocab_to_CSV(newVocab) }
+            }
+            case 'delete': {
+                const readings = context.vocab[action.char].split(";")
+                const newReadings = readings.filter((element) => { element === action.reading })
+                const newVocab = { ...context.vocab, [action.char]: newReadings.join(";") }
+                return { vocab: newVocab, csv: vocab_to_CSV(newVocab) }
+            }
+            default: {
+                throw Error('Unknown action: ' + action.type);
+            }
+        }
+    }
+
     // Vocab context
     const [context, dispatch] = useReducer(
         vocabReducer,
@@ -44,6 +70,35 @@ export default function Home() {
     // Text display
     const [tokens, setTokens] = useState([]);
     const [furigana, setFurigana] = useState("");
+
+    function CSV_to_vocab(csv) {
+        const csvString = "kanji,readings\n".concat(csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
+        readString(csvString, {
+            worker: true,
+            header: true,
+            delimiter: ',',
+            complete: (results) => {
+                let readings = {};
+                //console.log(results.errors);
+                for (const row of results.data) {
+                    if ("kanji" in row && "readings" in row) {
+                        readings[row["kanji"]] = row["readings"]
+                    }
+                }
+
+                dispatch({type: "set-vocab", vocab: readings});
+            }
+        })
+    }
+
+    function vocab_to_CSV(vocab) {
+        const results = Object.entries(vocab).map(function (item) {
+            return { "kanji": item[0], "readings": item[1] };
+        })
+        const csv = jsonToCSV(results, {header: false})
+
+        return csv
+    }
 
     // Initialize Kuroshiro
     useEffect(() => {
@@ -58,27 +113,10 @@ export default function Home() {
         async_init().catch(console.error)
     }, [])
 
-    // Set Vocab Context from Form CSV
+    // Set Vocab Context from Form CSV. Only the very first time
     useEffect(() => {
-        const csvString = "kanji,reading\n".concat(context.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
-        readString(csvString, {
-            worker: true,
-            header: true,
-            delimiter: ',',
-            complete: (results) => {
-                let readings = {};
-                //console.log(results.errors);
-                for (const row of results.data) {
-                    if ("kanji" in row && "reading" in row) {
-                        readings[row["kanji"]] = row["reading"]
-                    }
-                }
-
-                dispatch({type: "from-vocab", vocab: readings});
-            }
-        })
-
-    }, [context.csv])
+        CSV_to_vocab(context.csv)
+    }, [])
 
     // Parse main text to Tokens
     useEffect(() => {
@@ -130,9 +168,10 @@ export default function Home() {
                 onChange={(event) => {
                     event.persist();
                     dispatch({
-                        type: "from-csv",
+                        type: "set-csv",
                         csv: event.target.value
                     })
+                    CSV_to_vocab(event.target.value)
                 }}
             />
           </Form.Group>
