@@ -29,20 +29,20 @@ const regex = new RegExp(/(?:\r\n|\r|\n)/g);
 const isNonEmptyString = (val) => typeof val === 'string' && !!val
 
 function JapaneseChar({char, reading}) {
-    const {vocab, dispatchVocab} = useContext(VocabContext);
+    const {vocab, csv, dispatch} = useContext(VocabContext);
 
     const deactivate = isNonEmptyString(reading) && char in vocab && vocab[char].split(";").includes(reading);
 
     const addToVocab = () => {
         if (isNonEmptyString(reading)) {
             if (deactivate) {
-                dispatchVocab({
+                dispatch({
                     type: "delete",
                     char: char,
                     reading: reading
                 })
             } else {
-                dispatchVocab({
+                dispatch({
                     type: "add",
                     char: char,
                     reading: reading

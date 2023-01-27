@@ -17,7 +17,6 @@ export default function Home() {
     // Form
     const initialState = {
         "apiKey": "",
-        "csv": defaultDict,
         "text": ""
     };
     const [hideForm, setHideForm] = useState(false);
@@ -30,16 +29,21 @@ export default function Home() {
     const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
     const [isDictReady, setIsDictReady] = useState(false);
 
+    // Vocab CSV parsing
+    const { readString, jsonToCSV } = usePapaParse();
+
     // Vocab context
-    const [vocab, dispatchVocab] = useReducer(
+    const [context, dispatch] = useReducer(
         vocabReducer,
-        {}  // Init value
+        {
+            vocab: {},
+            csv: defaultDict
+        }  // Init value
     );
 
     // Text display
     const [tokens, setTokens] = useState([]);
     const [furigana, setFurigana] = useState("");
-    const { readString } = usePapaParse();
 
     // Initialize Kuroshiro
     useEffect(() => {
@@ -56,7 +60,7 @@ export default function Home() {
 
     // Set Vocab Context from Form CSV
     useEffect(() => {
-        const csvString = "kanji,reading\n".concat(values.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
+        const csvString = "kanji,reading\n".concat(context.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
         readString(csvString, {
             worker: true,
             header: true,
@@ -70,11 +74,11 @@ export default function Home() {
                     }
                 }
 
-                dispatchVocab({type: "reset", vocab: readings});
+                dispatch({type: "from-vocab", vocab: readings});
             }
         })
 
-    }, [values.csv])
+    }, [context.csv])
 
     // Parse main text to Tokens
     useEffect(() => {
@@ -95,7 +99,7 @@ export default function Home() {
             setFurigana(result)
         }
         async_furi().catch(console.error)
-    }, [tokens, vocab])
+    }, [tokens, context.vocab])
 
   return (
   <>
@@ -122,8 +126,14 @@ export default function Home() {
                 placeholder="Paste here."
                 rows={5}
                 name="csv"
-                value={values.csv}
-                onChange={handleChange}
+                value={context.csv}
+                onChange={(event) => {
+                    event.persist();
+                    dispatch({
+                        type: "from-csv",
+                        csv: event.target.value
+                    })
+                }}
             />
           </Form.Group>
           <Form.Group controlId="exampleForm.ControlTextarea2">
@@ -149,7 +159,7 @@ export default function Home() {
     <br />
     {isDictReady && 
         <div lang="ja" className={styles.japanese}>
-            <VocabContext.Provider value={{ vocab, dispatchVocab }}>
+            <VocabContext.Provider value={{ ...context, dispatch }}>
                 {furigana}
             </VocabContext.Provider>
         </div>
