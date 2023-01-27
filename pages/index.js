@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useReducer } from "react"
 import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
-import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji"; 
 import { Container, Button, Form } from 'react-bootstrap'
+
+import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
-import {JapaneseText} from "../components/rendered_text"
+import {convert} from "../components/rendered_text"
 import {defaultDict} from "../utils/const";
+import {
+    patchTokens
+} from "../utils/util";
+import { VocabContext } from "../components/vocabContext";
 
 export default function Home() {
     const initialState = {
@@ -15,10 +20,17 @@ export default function Home() {
         "text": ""
     };
     const [hideForm, setHideForm] = useState(false);
-    const [vocab, setVocab] = useState(null);
 
     const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
     const [isDictReady, setIsDictReady] = useState(false);
+
+    const [tokens, setTokens] = useState([]);
+
+    const [vocab, dispatchVocab] = useReducer(
+        vocabReducer,
+        {}  // Init value
+    );
+    const [furigana, setFurigana] = useState("");
     const { readString } = usePapaParse();
 
     const {values, setValues, handleChange, handleSubmit} = useForm(
@@ -53,11 +65,31 @@ export default function Home() {
                     }
                 }
 
-                setVocab(readings);
+                dispatchVocab({type: "reset", vocab: readings});
             }
         })
 
     }, [values.csv])
+
+    // Move to parent, separate parsed tokens from furigana to display
+    useEffect(() => {
+        const async_tokens = async () => {
+            const rawTokens = await kuroshiro._analyzer.parse(values.text || "");
+            const patched = patchTokens(rawTokens);
+
+            setTokens(patched)
+        }
+        async_tokens().catch(console.error)
+    }, [values.text])
+
+    useEffect(() => {
+        const async_furi = async () => {
+            const result = await convert(tokens);
+
+            setFurigana(result)
+        }
+        async_furi().catch(console.error)
+    }, [tokens, vocab])
 
   return (
   <>
@@ -106,8 +138,34 @@ export default function Home() {
           </Button>
         </Form>
     <br />
-    {isDictReady && <JapaneseText text={values.text} vocab={vocab} kuroshiro={kuroshiro}/>}
+    {isDictReady && 
+        <div lang="ja" className={styles.japanese}>
+            <VocabContext.Provider value={{ vocab, dispatchVocab }}>
+                {furigana}
+            </VocabContext.Provider>
+        </div>
+        }
     </Container>
     </>
   )
+}
+
+
+function vocabReducer(vocab, action) {
+    switch (action.type) {
+        case 'reset': {
+            return { ...action.vocab }
+        }
+        case 'add': {
+            return (action.char in vocab) ? { ...vocab, [action.char]: vocab[action.char] + ";" + action.reading } : { ...vocab, [action.char]: action.reading };
+        }
+        case 'delete': {
+            const readings = vocab[action.char].split(";")
+            const newReadings = readings.filter((element) => { element === action.reading })
+            return { ...vocab, [action.char]: newReadings.join(";") }
+        }
+        default: {
+            throw Error('Unknown action: ' + action.type);
+        }
+    }
 }
