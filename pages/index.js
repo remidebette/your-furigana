@@ -2,7 +2,7 @@ import { useState, useEffect, useReducer } from "react"
 import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji"; 
-import { Container, Button, Form } from 'react-bootstrap'
+import { Container, Button, Form, Card, Nav } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
@@ -13,16 +13,16 @@ import {
 } from "../utils/util";
 import { VocabContext } from "../components/vocabContext";
 
-export default function Home() {
+export default function Home({hideSettings}) {
     // Form
     const initialState = {
         "apiKey": "",
         "text": ""
     };
-    const [hideForm, setHideForm] = useState(false);
+    const [settingKey , setSettingKey] = useState("text");
     const { values, setValues, handleChange, handleSubmit } = useForm(
         initialState,
-        () => setHideForm(!hideForm)
+        () => { }
     );
 
     // Kuroshiro
@@ -139,71 +139,121 @@ export default function Home() {
         async_furi().catch(console.error)
     }, [tokens, context.vocab])
 
-  return (
-  <>
-    <Container>
-        <Form>
-            {!hideForm &&
-            <>
-{/*          <Form.Group controlId="exampleForm.ControlInput1">
-            <Form.Label>API Key</Form.Label>
-            <Form.Control
-                placeholder="API Key"
-                aria-label="API Key"
-                aria-describedby="api-key"
-                required
-                name="apiKey"
-                value={values.apiKey}
-                onChange={handleChange}
-                />
-          </Form.Group>*/}
-          <Form.Group controlId="exampleForm.ControlTextarea1">
-            <Form.Label>CSV Data</Form.Label>
-            <Form.Control
-                as="textarea"
-                placeholder="Paste here."
-                rows={5}
-                name="csv"
-                value={context.csv}
-                onChange={(event) => {
-                    event.persist();
-                    dispatch({
-                        type: "set-csv",
-                        csv: event.target.value
-                    })
-                    CSV_to_vocab(event.target.value)
-                }}
-            />
-          </Form.Group>
-          <Form.Group controlId="exampleForm.ControlTextarea2">
-            <Form.Label>Your text</Form.Label>
-            <Form.Control
-                as="textarea"
-                placeholder="Paste here."
-                rows={5}
-                name="text"
-                value={values.text}
-                onChange={handleChange}
-            />
-          </Form.Group>
-           </>
-           }
-          <Form.Group controlId="exampleForm.HideButton">
+    return (
+        <>
+            <Container>
+                {!hideSettings &&
+                    <Card className="mb-3">
+                        <Card.Header>
+                            <Nav 
+                                variant="tabs" 
+                                defaultActiveKey="text"
+                                onSelect={(selectedKey) => setSettingKey(selectedKey)}
+                            >
+                                <Nav.Item>
+                                    <Nav.Link eventKey="text">Text</Nav.Link>
+                                </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="readings">Readings</Nav.Link>
+                                </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="wanikani" disabled
+                                    >
+                                        Wanikani
+                                    </Nav.Link>
+                                </Nav.Item>
+                            </Nav>
+                        </Card.Header>
+                        <Card.Body>
+                            {/*<Card.Title>Special title treatment</Card.Title>
+                            <Card.Text>
+                                With supporting text below as a natural lead-in to additional content.
+                </Card.Text>*/}
+                            
+                            <Form>
+                                {(function () {
+                                    switch (settingKey) {
+                                        case "text":
+                                            return <Form.Group
+                                                controlId="exampleForm.ControlTextarea2"
+                                                className="mb-3"
+                                            >
+                                                <Form.Label>Your text</Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    placeholder="Paste here."
+                                                    rows={5}
+                                                    name="text"
+                                                    value={values.text}
+                                                    onChange={handleChange}
+                                                />
+                                                <Form.Text id="ControlTextarea2" muted>
+                                                    Please type or paste some japanese text
+                                                </Form.Text>
+                                            </Form.Group>
 
-          <Button variant="primary" type="submit" onClick={handleSubmit}>
-            {hideForm ? "Show Settings" : "Hide Settings"}
-          </Button>
-          </Form.Group>
-        </Form>
-    <br />
-    {isDictReady && 
-        <div lang="ja" className={styles.japanese}>
-            <VocabContext.Provider value={{ ...context, dispatch }}>
-                {furigana}
-            </VocabContext.Provider>
-        </div>
-        }
-    </Container>
-    </>
-  )
+                                        case "readings":
+                                            return <Form.Group
+                                                controlId="exampleForm.ControlTextarea1"
+                                                className="mb-3"
+                                            >
+                                                <Form.Label>Readings Data</Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    placeholder="Paste here."
+                                                    rows={5}
+                                                    name="csv"
+                                                    value={context.csv}
+                                                    onChange={(event) => {
+                                                        event.persist();
+                                                        dispatch({
+                                                            type: "set-csv",
+                                                            csv: event.target.value
+                                                        })
+                                                        CSV_to_vocab(event.target.value)
+                                                    }}
+                                                />
+                                                <Form.Text id="ControlTextarea1" muted>
+                                                    A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
+                                                </Form.Text>
+                                            </Form.Group>
+                                        case "wanikani": 
+                                            return <Form.Group controlId="exampleForm.ControlInput1">
+                                                <Form.Label>API Key</Form.Label>
+                                                <Form.Control
+                                                    placeholder="API Key"
+                                                    aria-label="API Key"
+                                                    aria-describedby="api-key"
+                                                    required
+                                                    name="apiKey"
+                                                    value={values.apiKey}
+                                                    onChange={handleChange}
+                                                />
+                                            </Form.Group>
+                                    }
+                                })()}
+
+
+
+
+
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                }
+
+
+                <br />
+
+                {isDictReady && 
+                    <div lang="ja" className={styles.japanese}>
+                        <VocabContext.Provider value={{ ...context, dispatch }}>
+                            {furigana}
+                        </VocabContext.Provider>
+                    </div>
+                }
+
+            </Container>
+        </>
+    )
 }
