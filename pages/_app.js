@@ -71,7 +71,7 @@ function MyApp({ Component, pageProps }) {
         */
             </Head>
 
-            <Navbar sticky="top" expand="lg" style={{"padding": "1rem"}}>
+            <Navbar sticky="top" expand="lg" style={{"padding": "1rem"}} bg="white">
                 <Link href="/" passHref><Navbar.Brand>Wanikani Reader</Navbar.Brand></Link>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
