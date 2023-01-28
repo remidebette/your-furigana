@@ -9,7 +9,8 @@ import useForm from "../utils/useForm";
 import {convert} from "../components/rendered_text"
 import {defaultDict} from "../utils/const";
 import {
-    patchTokens
+    patchTokens,
+    isNonEmptyString
 } from "../utils/util";
 import { VocabContext } from "../components/vocabContext";
 
@@ -49,7 +50,13 @@ export default function Home({hideSettings}) {
             case 'delete': {
                 const readings = context.vocab[action.char].split(";")
                 const newReadings = readings.filter((element) => element !== action.reading)
-                const newVocab = { ...context.vocab, [action.char]: newReadings.join(";") }
+                const newVocab = { ...context.vocab }
+                const newReadingsString = newReadings.join(";")
+                if (isNonEmptyString(newReadingsString)) {
+                    newVocab[action.char] = newReadingsString
+                } else {
+                    delete newVocab[action.char]
+                }
                 return { vocab: newVocab, csv: vocab_to_CSV(newVocab) }
             }
             default: {
@@ -241,7 +248,6 @@ export default function Home({hideSettings}) {
                         </Card.Body>
                     </Card>
                 }
-
 
                 <br />
 

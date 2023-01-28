@@ -20,13 +20,12 @@ import {
     toRawRomaji,
     kanaToHiragna,
     kanaToKatakana,
-    kanaToRomaji
+    kanaToRomaji,
+    isNonEmptyString
 } from "../utils/util";
 import { VocabContext } from "./vocabContext";
 
 const regex = new RegExp(/(?:\r\n|\r|\n)/g);
-
-const isNonEmptyString = (val) => typeof val === 'string' && !!val
 
 function JapaneseChar({char, reading}) {
     const {vocab, csv, dispatch} = useContext(VocabContext);

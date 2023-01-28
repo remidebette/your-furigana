@@ -1575,6 +1575,8 @@ const kanaToRomaji = function (str, system) {
     return toRawRomaji(str, system);
 };
 
+const isNonEmptyString = (val) => typeof val === 'string' && !!val
+
 export {
     // language
     ROMANIZATION_SYSTEM,
@@ -1596,5 +1598,6 @@ export {
     toRawRomaji,
     kanaToHiragna,
     kanaToKatakana,
-    kanaToRomaji
+    kanaToRomaji,
+    isNonEmptyString
 };
