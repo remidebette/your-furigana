@@ -8,7 +8,7 @@ export async function getAssignments(code, key) {
     let rep = await fetch(
         url,
         {
-            method: 'GET'
+            method: 'GET',
             headers: myHeaders
         }
     );
