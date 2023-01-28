@@ -48,7 +48,7 @@ export default function Home() {
             }
             case 'delete': {
                 const readings = context.vocab[action.char].split(";")
-                const newReadings = readings.filter((element) => { element === action.reading })
+                const newReadings = readings.filter((element) => element !== action.reading)
                 const newVocab = { ...context.vocab, [action.char]: newReadings.join(";") }
                 return { vocab: newVocab, csv: vocab_to_CSV(newVocab) }
             }
