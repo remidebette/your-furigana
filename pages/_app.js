@@ -16,9 +16,9 @@ function MyApp({ Component, pageProps }) {
         /*        <meta charSet='utf-8' />
                 <meta httpEquiv='X-UA-Compatible' content='IE=edge' />*/
                 <meta name='viewport' content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover' />
-                <meta name='description' content='Display furigana according to your wanikani level on any text.' />
+                <meta name='description' content='Display furigana according to your own level on any text.' />
                 <meta name='keywords' content='wanikani' />
-                <title>Wanikani Reader</title>
+                <title>Your Furigana</title>
         /*
 
                 <link rel='manifest' href='/manifest.json' />
@@ -72,7 +72,7 @@ function MyApp({ Component, pageProps }) {
             </Head>
 
             <Navbar sticky="top" expand="lg" style={{"padding": "1rem"}} bg="white">
-                <Link href="/" passHref><Navbar.Brand>Wanikani Reader</Navbar.Brand></Link>
+                <Link href="/" passHref><Navbar.Brand>Your Furigana</Navbar.Brand></Link>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
                     <Button
