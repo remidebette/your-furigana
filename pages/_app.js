@@ -16,9 +16,9 @@ function MyApp({ Component, pageProps }) {
         /*        <meta charSet='utf-8' />
                 <meta httpEquiv='X-UA-Compatible' content='IE=edge' />*/
                 <meta name='viewport' content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover' />
-                <meta name='description' content='Display furigana according to your wanikani level on any text.' />
+                <meta name='description' content='Display furigana according to your own level on any text.' />
                 <meta name='keywords' content='wanikani' />
-                <title>Wanikani Reader</title>
+                <title>Your Furigana</title>
         /*
 
                 <link rel='manifest' href='/manifest.json' />
@@ -68,23 +68,23 @@ function MyApp({ Component, pageProps }) {
                 <meta property='og:site_name' content='' />
                 <meta property='og:url' content='https://yourdomain.com' />
                 <meta property='og:image' content='https://yourdomain.com/icons/apple-icon.png' />
-        */
+                */
             </Head>
 
-            <Navbar sticky="top" expand="lg" style={{"padding": "1rem"}} bg="white">
-                <Link href="/" passHref><Navbar.Brand>Wanikani Reader</Navbar.Brand></Link>
+            <Navbar sticky="top" expand="lg" style={{ "padding": "1rem" }} bg="white">
+                <Link href="/" passHref><Navbar.Brand>Your Furigana</Navbar.Brand></Link>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
                     <Button
-                      variant="primary"
-                      onClick={() => setHideSettings(!hideSettings)}
+                        variant="primary"
+                        onClick={() => setHideSettings(!hideSettings)}
                     >
-                      {hideSettings ? "Show settings" : "Hide settings"}
+                        {hideSettings ? "Show settings" : "Hide settings"}
                     </Button>
 
                     <Nav className="mr-auto" variant="pills">
 
-          {/*              <Link href="/settings" passHref><Nav.Link>Settings</Nav.Link></Link>
+                        {/*              <Link href="/settings" passHref><Nav.Link>Settings</Nav.Link></Link>
                         <Link href="/list" passHref><Nav.Link>List</Nav.Link></Link>
                         <NavDropdown title="Dropdown" id="basic-nav-dropdown">
                             <Link href="#action/3.1" passHref><NavDropdown.Item>Action</NavDropdown.Item></Link>
@@ -94,13 +94,20 @@ function MyApp({ Component, pageProps }) {
                             <Link href="#action/3.4" passHref><NavDropdown.Item>Separated link</NavDropdown.Item></Link>
                         </NavDropdown>*/}
                     </Nav>
-          {/*          <Form inline>
+                    {/*          <Form inline>
                         <FormControl type="text" placeholder="Search" className="mr-sm-2" />
                         <Button variant="outline-success">Search</Button>
                     </Form>*/}
                 </Navbar.Collapse>
             </Navbar>
-        <Component {...pageProps} hideSettings={hideSettings} />
+            <Component {...pageProps} hideSettings={hideSettings} />
+
+            <footer className="page-footer font-small pt-4" style={{ "color": "#999999" }}>
+                <div className="footer-copyright text-center py-3">More info on&nbsp;
+                    <a href="https://github.com/remidebette/your-furigana" style={{ "color": "#999999" }}>Github</a>
+                </div>
+
+            </footer>
         </>
     )
 }
