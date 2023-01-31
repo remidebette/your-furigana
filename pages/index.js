@@ -215,7 +215,7 @@ export default function Home({ hideSettings }) {
                                                     controlId="formFile"
                                                     className="mb-3"
                                                     //style={{ display: "flex" }}
-                                                    label="Or upload / download the file"
+                                                    label="Or upload / download the text file"
                                                     setFile={(content) => { setValues({ ...values, "text": content }) }}
                                                     downloadName={"your-furigana-" + new Date().toISOString() + ".txt"}
                                                     downloadContent={values.text}
@@ -252,7 +252,7 @@ export default function Home({ hideSettings }) {
                                                     controlId="formFile2"
                                                     className="mb-3"
                                                     //style={{ display: "flex" }}
-                                                    label="Or upload / download the file"
+                                                    label="Or upload / download the readings file"
                                                     setFile={(content) => {
                                                         let trimmed = content.trim()
                                                         if (trimmed.startsWith("kanji,readings\n")) {
