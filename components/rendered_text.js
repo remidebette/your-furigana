@@ -25,8 +25,6 @@ import {
 } from "../utils/util";
 import { VocabContext } from "./vocabContext";
 
-const regex = new RegExp(/(?:\r\n|\r|\n)/g);
-
 function JapaneseChar({char, reading}) {
     const {vocab, csv, dispatch} = useContext(VocabContext);
 
@@ -125,12 +123,7 @@ async function convert(tokens) {
                         result.push(<JapaneseChar key={key} char={token.surface_form}/>);
                         break;
                     case StrType.OTHER:
-                        // TODO: better handle several \n
-                        if (regex.test(token.surface_form)) {
-                            result.push(<br />)
-                            break;
-                        }
-                        result.push(<JapaneseChar key={key} char={token.surface_form}/>);
+                        result.push(token.surface_form);
                         break;
                     default:
                         throw new Error("Unknown strType");

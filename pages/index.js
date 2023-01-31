@@ -1,26 +1,27 @@
 import { useState, useEffect, useReducer } from "react"
 import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
-import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji"; 
-import { Container, Button, Form, Card, Nav } from 'react-bootstrap'
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
+import { Container, Form, Card, Nav } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
-import {convert} from "../components/rendered_text"
-import {defaultDict} from "../utils/const";
+import { convert } from "../components/rendered_text"
+import { defaultDict } from "../utils/const";
 import {
     patchTokens,
     isNonEmptyString
 } from "../utils/util";
 import { VocabContext } from "../components/vocabContext";
+import { UploadDownload } from "../components/files";
 
-export default function Home({hideSettings}) {
+export default function Home({ hideSettings }) {
     // Form
     const initialState = {
         "apiKey": "",
         "text": ""
     };
-    const [settingKey , setSettingKey] = useState("text");
+    const [settingKey, setSettingKey] = useState("text");
     const { values, setValues, handleChange, handleSubmit } = useForm(
         initialState,
         () => { }
@@ -41,7 +42,8 @@ export default function Home({hideSettings}) {
                 return { vocab: { ...action.vocab }, csv: context.csv }
             }
             case 'set-csv': {
-                return { vocab: { ...context.vocab }, csv: action.csv }
+                const csvString = action.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+                return { vocab: { ...context.vocab }, csv: csvString }
             }
             case 'add': {
                 const newVocab = (action.char in context.vocab) ? { ...context.vocab, [action.char]: context.vocab[action.char] + ";" + action.reading } : { ...context.vocab, [action.char]: action.reading };
@@ -76,10 +78,10 @@ export default function Home({hideSettings}) {
 
     // Text display
     const [tokens, setTokens] = useState([]);
-    const [furigana, setFurigana] = useState("");
+    const [furigana, setFurigana] = useState([]);
 
     function CSV_to_vocab(csv) {
-        const csvString = "kanji,readings\n".concat(csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
+        const csvString = "kanji,readings\n".concat(csv)
         readString(csvString, {
             worker: true,
             header: true,
@@ -93,7 +95,7 @@ export default function Home({hideSettings}) {
                     }
                 }
 
-                dispatch({type: "set-vocab", vocab: readings});
+                dispatch({ type: "set-vocab", vocab: readings });
             }
         })
     }
@@ -102,16 +104,24 @@ export default function Home({hideSettings}) {
         const results = Object.entries(vocab).map(function (item) {
             return { "kanji": item[0], "readings": item[1] };
         })
-        const csv = jsonToCSV(results, {header: false})
+        const csv = jsonToCSV(results, { header: false })
 
         return csv
+    }
+
+    function updateVocab(value) {
+        dispatch({
+            type: "set-csv",
+            csv: value
+        })
+        CSV_to_vocab(value)
     }
 
     // Initialize Kuroshiro
     useEffect(() => {
         const async_init = async () => {
             console.log("Initializing kuroshiro");
-            const analyzer = new KuromojiAnalyzer({dictPath: "/data/dict"});
+            const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" });
             //const analyzer = new MecabAnalyzer();
             await kuroshiro.init(analyzer);
             setIsDictReady(true);
@@ -152,8 +162,8 @@ export default function Home({hideSettings}) {
                 {!hideSettings &&
                     <Card className="mb-3">
                         <Card.Header>
-                            <Nav 
-                                variant="tabs" 
+                            <Nav
+                                variant="tabs"
                                 defaultActiveKey="text"
                                 onSelect={(selectedKey) => setSettingKey(selectedKey)}
                             >
@@ -171,88 +181,122 @@ export default function Home({hideSettings}) {
                                 </Nav.Item>
                             </Nav>
                         </Card.Header>
-                        <Card.Body>
-                            {/*<Card.Title>Special title treatment</Card.Title>
+                        {/*<Card.Title>Special title treatment</Card.Title>
                             <Card.Text>
                                 With supporting text below as a natural lead-in to additional content.
                 </Card.Text>*/}
-                            
-                            <Form>
-                                {(function () {
-                                    switch (settingKey) {
-                                        case "text":
-                                            return <Form.Group
-                                                controlId="exampleForm.ControlTextarea2"
-                                                className="mb-3"
-                                            >
-                                                <Form.Label>Your text</Form.Label>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    placeholder="Paste here."
-                                                    rows={5}
-                                                    name="text"
-                                                    value={values.text}
-                                                    onChange={handleChange}
-                                                />
-                                                <Form.Text id="ControlTextarea2" muted>
-                                                    Please type or paste some japanese text
-                                                </Form.Text>
-                                            </Form.Group>
 
-                                        case "readings":
-                                            return <Form.Group
-                                                controlId="exampleForm.ControlTextarea1"
-                                                className="mb-3"
-                                            >
-                                                <Form.Label>Readings Data</Form.Label>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    placeholder="Paste here."
-                                                    rows={5}
-                                                    name="csv"
-                                                    value={context.csv}
-                                                    onChange={(event) => {
-                                                        event.persist();
-                                                        dispatch({
-                                                            type: "set-csv",
-                                                            csv: event.target.value
-                                                        })
-                                                        CSV_to_vocab(event.target.value)
+                        <Form>
+                            {(function () {
+                                switch (settingKey) {
+                                    case "text":
+                                        return <>
+                                            <Card.Body>
+                                                <Form.Group
+                                                    controlId="exampleForm.ControlTextarea2"
+                                                    className="mb-3"
+                                                >
+                                                    <Form.Label>Your text</Form.Label>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        placeholder="Paste here."
+                                                        rows={5}
+                                                        name="text"
+                                                        value={values.text}
+                                                        onChange={handleChange}
+                                                    />
+                                                    <Form.Text id="ControlTextarea2" muted>
+                                                        Please type or paste some japanese text
+                                                    </Form.Text>
+                                                </Form.Group>
+                                            </Card.Body>
+                                            <Card.Footer>
+                                                <UploadDownload
+                                                    controlId="formFile"
+                                                    className="mb-3"
+                                                    //style={{ display: "flex" }}
+                                                    label="Or upload / download the text file"
+                                                    setFile={(content) => { setValues({ ...values, "text": content }) }}
+                                                    downloadName={"your-furigana-" + new Date().toISOString() + ".txt"}
+                                                    downloadContent={values.text}
+                                                ></UploadDownload>
+                                            </Card.Footer>
+                                        </>
+
+                                    case "readings":
+                                        return <>
+                                            <Card.Body>
+                                                <Form.Group
+                                                    controlId="exampleForm.ControlTextarea1"
+                                                    className="mb-3"
+                                                >
+                                                    <Form.Label>Readings Data</Form.Label>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        placeholder="Paste here."
+                                                        rows={5}
+                                                        name="csv"
+                                                        value={context.csv}
+                                                        onChange={(event) => {
+                                                            event.persist();
+                                                            updateVocab(event.target.value)
+                                                        }}
+                                                    />
+                                                    <Form.Text id="ControlTextarea1" muted>
+                                                        A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
+                                                    </Form.Text>
+                                                </Form.Group>
+                                            </Card.Body>
+                                            <Card.Footer>
+                                                <UploadDownload
+                                                    controlId="formFile2"
+                                                    className="mb-3"
+                                                    //style={{ display: "flex" }}
+                                                    label="Or upload / download the readings file"
+                                                    setFile={(content) => {
+                                                        let trimmed = content.trim()
+                                                        if (trimmed.startsWith("kanji,readings\n")) {
+                                                            trimmed = trimmed.slice(15)
+                                                        }
+                                                        updateVocab(content) 
                                                     }}
-                                                />
-                                                <Form.Text id="ControlTextarea1" muted>
-                                                    A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
-                                                </Form.Text>
-                                            </Form.Group>
-                                        case "wanikani": 
-                                            return <Form.Group controlId="exampleForm.ControlInput1">
-                                                <Form.Label>API Key</Form.Label>
-                                                <Form.Control
-                                                    placeholder="API Key"
-                                                    aria-label="API Key"
-                                                    aria-describedby="api-key"
-                                                    required
-                                                    name="apiKey"
-                                                    value={values.apiKey}
-                                                    onChange={handleChange}
-                                                />
-                                            </Form.Group>
-                                    }
-                                })()}
+                                                    downloadName={"readings-" + new Date().toISOString() + ".csv"}
+                                                    downloadContent={"kanji,readings\n".concat(context.csv)}
+                                                ></UploadDownload>
+                                            </Card.Footer>
+                                        </>
+                                    case "wanikani":
+                                        return <>
+                                            <Card.Body>
+                                                <Form.Group controlId="exampleForm.ControlInput1">
+                                                    <Form.Label>API Key</Form.Label>
+                                                    <Form.Control
+                                                        placeholder="API Key"
+                                                        aria-label="API Key"
+                                                        aria-describedby="api-key"
+                                                        required
+                                                        name="apiKey"
+                                                        value={values.apiKey}
+                                                        onChange={handleChange}
+                                                    />
+                                                </Form.Group>
+                                            </Card.Body>
+                                        </>
+                                }
+                            })()}
 
 
 
 
 
-                            </Form>
-                        </Card.Body>
+                        </Form>
                     </Card>
                 }
 
                 <br />
 
-                {isDictReady && 
-                    <div lang="ja" className={styles.japanese}>
+                {isDictReady &&
+                    <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
                         <VocabContext.Provider value={{ ...context, dispatch }}>
                             {furigana}
                         </VocabContext.Provider>
