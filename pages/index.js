@@ -202,23 +202,32 @@ export default function Home({hideSettings}) {
                                 {(function () {
                                     switch (settingKey) {
                                         case "text":
-                                            return <Form.Group
-                                                controlId="exampleForm.ControlTextarea2"
-                                                className="mb-3"
-                                            >
-                                                <Form.Label>Your text</Form.Label>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    placeholder="Paste here."
-                                                    rows={5}
-                                                    name="text"
-                                                    value={values.text}
-                                                    onChange={handleChange}
-                                                />
-                                                <Form.Text id="ControlTextarea2" muted>
-                                                    Please type or paste some japanese text
-                                                </Form.Text>
-                                            </Form.Group>
+                                            return <>
+                                                <Form.Group
+                                                    controlId="exampleForm.ControlTextarea2"
+                                                    className="mb-3"
+                                                >
+                                                    <Form.Label>Your text</Form.Label>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        placeholder="Paste here."
+                                                        rows={5}
+                                                        name="text"
+                                                        value={values.text}
+                                                        onChange={handleChange}
+                                                    />
+                                                    <Form.Text id="ControlTextarea2" muted>
+                                                        Please type or paste some japanese text
+                                                    </Form.Text>
+                                                </Form.Group>
+                                                <DownloadButton
+                                                    variant="secondary"
+                                                    filename={"your-furigana-" + Date.now() + ".txt"}
+                                                    fileContent={values.text}
+                                                >
+                                                    DownloadFile
+                                                </DownloadButton>
+                                            </>
 
                                         case "readings":
                                             return <><Form.Group
@@ -247,7 +256,7 @@ export default function Home({hideSettings}) {
                                             </Form.Group>
                                             <DownloadButton 
                                                 variant="secondary"
-                                                filename="readings.csv"
+                                                    filename={"readings-" + Date.now() + ".csv"}
                                                 fileContent={"kanji,readings\n".concat(context.csv)}
                                             >
                                                 DownloadFile
