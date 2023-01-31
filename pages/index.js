@@ -41,7 +41,8 @@ export default function Home({hideSettings}) {
                 return { vocab: { ...action.vocab }, csv: context.csv }
             }
             case 'set-csv': {
-                return { vocab: { ...context.vocab }, csv: action.csv }
+                const csvString = action.csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+                return { vocab: { ...context.vocab }, csv: csvString }
             }
             case 'add': {
                 const newVocab = (action.char in context.vocab) ? { ...context.vocab, [action.char]: context.vocab[action.char] + ";" + action.reading } : { ...context.vocab, [action.char]: action.reading };
@@ -79,7 +80,7 @@ export default function Home({hideSettings}) {
     const [furigana, setFurigana] = useState("");
 
     function CSV_to_vocab(csv) {
-        const csvString = "kanji,readings\n".concat(csv.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, ''))
+        const csvString = "kanji,readings\n".concat(csv)
         readString(csvString, {
             worker: true,
             header: true,
@@ -146,6 +147,26 @@ export default function Home({hideSettings}) {
         async_furi().catch(console.error)
     }, [tokens, context.vocab])
 
+    function DownloadButton({ filename, fileContent, ...props }) {
+        function downloadTxtFile() {
+            const file = new Blob([fileContent], { type: "text/plain" });
+
+            const element = document.createElement("a")
+            element.href = URL.createObjectURL(file);
+            element.download = filename;
+
+            document.body.appendChild(element)
+            element.click();
+        }
+
+        return <Button
+            {...props}
+            onClick={() => downloadTxtFile()}
+        >
+            Download File
+        </Button>;
+    }
+
     return (
         <>
             <Container>
@@ -200,7 +221,7 @@ export default function Home({hideSettings}) {
                                             </Form.Group>
 
                                         case "readings":
-                                            return <Form.Group
+                                            return <><Form.Group
                                                 controlId="exampleForm.ControlTextarea1"
                                                 className="mb-3"
                                             >
@@ -224,6 +245,14 @@ export default function Home({hideSettings}) {
                                                     A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
                                                 </Form.Text>
                                             </Form.Group>
+                                            <DownloadButton 
+                                                variant="secondary"
+                                                filename="readings.csv"
+                                                fileContent={"kanji,readings\n".concat(context.csv)}
+                                            >
+                                                DownloadFile
+                                            </DownloadButton>
+                                            </>
                                         case "wanikani": 
                                             return <Form.Group controlId="exampleForm.ControlInput1">
                                                 <Form.Label>API Key</Form.Label>
