@@ -7,6 +7,8 @@ import { useState } from "react"
 
 import { Navbar, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
 
+import { Footer } from '../components/footer'
+
 function MyApp({ Component, pageProps }) {
     const [hideSettings, setHideSettings] = useState(false);
 
@@ -102,12 +104,7 @@ function MyApp({ Component, pageProps }) {
             </Navbar>
             <Component {...pageProps} hideSettings={hideSettings} />
 
-            <footer className="page-footer font-small pt-4" style={{ "color": "#999999" }}>
-                <div className="footer-copyright text-center py-3">More info on&nbsp;
-                    <a href="https://github.com/remidebette/your-furigana" style={{ "color": "#999999" }}>Github</a>
-                </div>
-
-            </footer>
+            <Footer />
         </>
     )
 }
