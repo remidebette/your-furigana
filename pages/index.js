@@ -78,7 +78,7 @@ export default function Home({ hideSettings }) {
 
     // Text display
     const [tokens, setTokens] = useState([]);
-    const [furigana, setFurigana] = useState("");
+    const [furigana, setFurigana] = useState([]);
 
     function CSV_to_vocab(csv) {
         const csvString = "kanji,readings\n".concat(csv)
@@ -296,7 +296,7 @@ export default function Home({ hideSettings }) {
                 <br />
 
                 {isDictReady &&
-                    <div lang="ja" className={styles.japanese}>
+                    <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
                         <VocabContext.Provider value={{ ...context, dispatch }}>
                             {furigana}
                         </VocabContext.Provider>
