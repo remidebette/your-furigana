@@ -72,7 +72,7 @@ export default function Home({ hideSettings }) {
         vocabReducer,
         {
             vocab: {},
-            csv: defaultDict
+            csv: ""
         }  // Init value
     );
 
@@ -104,7 +104,7 @@ export default function Home({ hideSettings }) {
         const results = Object.entries(vocab).map(function (item) {
             return { "kanji": item[0], "readings": item[1] };
         })
-        const csv = jsonToCSV(results, { header: false })
+        const csv = jsonToCSV(results, { header: false, newline: "\n" })
 
         return csv
     }
@@ -116,6 +116,19 @@ export default function Home({ hideSettings }) {
         })
         CSV_to_vocab(value)
     }
+
+    // Set the csv text value only the very first time
+    useEffect(() => {
+        const stored_csv = localStorage.getItem("csv");
+        updateVocab(isNonEmptyString(stored_csv) ? stored_csv : defaultDict)
+    }, [])
+
+    // TODO: force the render the very first time
+    // Set the text value only the very first time
+    useEffect(() => {
+        const stored_text = localStorage.getItem("text");
+        setValues(values => ({ ...values, "text": isNonEmptyString(stored_text) ? stored_text : "" }))
+    }, [isDictReady])
 
     // Initialize Kuroshiro
     useEffect(() => {
@@ -130,18 +143,15 @@ export default function Home({ hideSettings }) {
         async_init().catch(console.error)
     }, [])
 
-    // Set Vocab Context from Form CSV. Only the very first time
-    useEffect(() => {
-        CSV_to_vocab(context.csv)
-    }, [])
-
     // Parse main text to Tokens
     useEffect(() => {
         const async_tokens = async () => {
-            const rawTokens = await kuroshiro._analyzer.parse(values.text || "");
+            const text = values.text || ""
+            const rawTokens = await kuroshiro._analyzer.parse(text);
             const patched = patchTokens(rawTokens);
 
             setTokens(patched)
+            localStorage.setItem('text', text)
         }
         async_tokens().catch(console.error)
     }, [values.text])
@@ -155,6 +165,11 @@ export default function Home({ hideSettings }) {
         }
         async_furi().catch(console.error)
     }, [tokens, context.vocab])
+
+    // Save CSV changes to local storage
+    useEffect(() => {
+        localStorage.setItem('csv', context.csv)
+    }, [context.csv])
 
     return (
         <>
@@ -258,7 +273,7 @@ export default function Home({ hideSettings }) {
                                                         if (trimmed.startsWith("kanji,readings\n")) {
                                                             trimmed = trimmed.slice(15)
                                                         }
-                                                        updateVocab(content) 
+                                                        updateVocab(content)
                                                     }}
                                                     downloadName={"readings-" + new Date().toISOString() + ".csv"}
                                                     downloadContent={"kanji,readings\n".concat(context.csv)}
@@ -285,15 +300,9 @@ export default function Home({ hideSettings }) {
                                 }
                             })()}
 
-
-
-
-
                         </Form>
                     </Card>
                 }
-
-                <br />
 
                 {isDictReady &&
                     <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
