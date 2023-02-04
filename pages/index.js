@@ -2,7 +2,7 @@ import { useState, useEffect, useReducer } from "react"
 import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-import { Container, Form, Card, Nav } from 'react-bootstrap'
+import { Container, Form, Card, Nav, Spinner } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
@@ -16,26 +16,107 @@ import { VocabContext } from "../components/vocabContext";
 import { UploadDownload } from "../components/files";
 
 export default function Home({ hideSettings }) {
-    // Form
+    // Settings tab
+    const [settingKey, setSettingKey] = useState("text");
+
+
+    // Settings Form
     const initialState = {
         "apiKey": "",
         "text": ""
     };
-    const [settingKey, setSettingKey] = useState("text");
     const { values, setValues, handleChange, handleSubmit } = useForm(
         initialState,
         () => { }
     );
 
-    // Kuroshiro
-    const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
-    const [isDictReady, setIsDictReady] = useState(false);
+    // ------ Kuroshiro dictionary -------
+    const [kuroshiro, setKuroshiro] = useState(null);
 
-    // Vocab CSV parsing
+    async function initkuroshiro() {
+        const kuroshiro = new Kuroshiro()
+        console.log("Initializing kuroshiro")
+        const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" })
+        //const analyzer = new MecabAnalyzer();
+        await kuroshiro.init(analyzer)
+        setKuroshiro(kuroshiro)
+        console.log("Kuroshiro is ready")
+    }
+
+    // Init Kuroshiro at first render
+    useEffect(() => {
+        initkuroshiro().catch(console.error)
+    }, [])
+    // ------------------------------------
+
+
+    // ------------ Vocab CSV parsing ----------------
     const { readString, jsonToCSV } = usePapaParse();
 
+    function CSV_to_vocab(csv) {
+        const csvString = "kanji,readings\n".concat(csv)
+        readString(csvString, {
+            worker: true,
+            header: true,
+            delimiter: ',',
+            complete: (results) => {
+                let readings = {};
+                //console.log(results.errors);
+                for (const row of results.data) {
+                    if ("kanji" in row && "readings" in row) {
+                        readings[row["kanji"]] = row["readings"]
+                    }
+                }
 
-    // TODO: maintain the CSV updated after a change in Vocab
+                dispatch({ type: "set-vocab", vocab: readings });
+            }
+        })
+    }
+
+    function vocab_to_CSV(vocab) {
+        const results = Object.entries(vocab).map(function (item) {
+            return { "kanji": item[0], "readings": item[1] };
+        })
+        return jsonToCSV(results, { header: false, newline: "\n" })
+    }
+    // -----------------------------------------------------
+
+    // ------------ Vocab Context ----------------------
+    const [context, dispatch] = useReducer(
+        vocabReducer,
+        {
+            csv: "",
+            vocab: {}
+        }  // Init value
+    );
+
+    // Init Csv from LocalStorage
+    useEffect(() => {
+        if (!kuroshiro) return
+        const storedCsv = localStorage.getItem("csv")
+        updateVocab(isNonEmptyString(storedCsv) ? storedCsv : defaultDict)
+    }, [kuroshiro])
+
+
+    // Save CSV to LocalStorage
+    useEffect(() => {
+        if (!kuroshiro) return
+        localStorage.setItem("csv", context.csv)
+    }, [context.csv, kuroshiro])
+
+
+    function updateVocab(value) {
+        dispatch({
+            type: "set-csv",
+            csv: value
+        })
+        CSV_to_vocab(value)
+        localStorage.setItem("csv", value)
+    }
+    // -----------------------------------------------
+    
+
+    // --------- Vocab reducer -----------------
     function vocabReducer(context, action) {
         switch (action.type) {
             case 'set-vocab': {
@@ -66,110 +147,41 @@ export default function Home({ hideSettings }) {
             }
         }
     }
+    // -------------------------------------------------
 
-    // Vocab context
-    const [context, dispatch] = useReducer(
-        vocabReducer,
-        {
-            vocab: {},
-            csv: ""
-        }  // Init value
-    );
 
-    // Text display
-    const [tokens, setTokens] = useState([]);
+    // ---------- Tokenized Furigana ----------
     const [furigana, setFurigana] = useState([]);
 
-    function CSV_to_vocab(csv) {
-        const csvString = "kanji,readings\n".concat(csv)
-        readString(csvString, {
-            worker: true,
-            header: true,
-            delimiter: ',',
-            complete: (results) => {
-                let readings = {};
-                //console.log(results.errors);
-                for (const row of results.data) {
-                    if ("kanji" in row && "readings" in row) {
-                        readings[row["kanji"]] = row["readings"]
-                    }
-                }
+    async function parseTextToTokens(text) {
+        if (!kuroshiro) return
+        try {
+            const rawTokens = await kuroshiro._analyzer.parse(text)
+            const patched = patchTokens(rawTokens)
+            const result = await convert(patched)
+            setFurigana(result)
+            localStorage.setItem('text', values.text)
 
-                dispatch({ type: "set-vocab", vocab: readings });
-            }
-        })
-    }
-
-    function vocab_to_CSV(vocab) {
-        const results = Object.entries(vocab).map(function (item) {
-            return { "kanji": item[0], "readings": item[1] };
-        })
-        const csv = jsonToCSV(results, { header: false, newline: "\n" })
-
-        return csv
-    }
-
-    function updateVocab(value) {
-        dispatch({
-            type: "set-csv",
-            csv: value
-        })
-        CSV_to_vocab(value)
-    }
-
-    // Set the csv text value only the very first time
-    useEffect(() => {
-        const stored_csv = localStorage.getItem("csv");
-        updateVocab(isNonEmptyString(stored_csv) ? stored_csv : defaultDict)
-    }, [])
-
-    // TODO: force the render the very first time
-    // Set the text value only the very first time
-    useEffect(() => {
-        const stored_text = localStorage.getItem("text");
-        setValues(values => ({ ...values, "text": isNonEmptyString(stored_text) ? stored_text : "" }))
-    }, [isDictReady])
-
-    // Initialize Kuroshiro
-    useEffect(() => {
-        const async_init = async () => {
-            console.log("Initializing kuroshiro");
-            const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" });
-            //const analyzer = new MecabAnalyzer();
-            await kuroshiro.init(analyzer);
-            setIsDictReady(true);
-            console.log("Kuroshiro is ready");
+        } catch (e) {
+            console.error(e)
         }
-        async_init().catch(console.error)
-    }, [])
+    }
 
-    // Parse main text to Tokens
+    // Init Text from Local storage
     useEffect(() => {
-        const async_tokens = async () => {
-            const text = values.text || ""
-            const rawTokens = await kuroshiro._analyzer.parse(text);
-            const patched = patchTokens(rawTokens);
+        if (!kuroshiro) return
+        const storedText = localStorage.getItem("text")
+        if (!storedText) return
+        setValues(values => ({ ...values, "text": storedText }))
+        parseTextToTokens(storedText).catch(console.error)
+    }, [kuroshiro])
 
-            setTokens(patched)
-            localStorage.setItem('text', text)
-        }
-        async_tokens().catch(console.error)
+    // Parse Text
+    useEffect(() => {
+        parseTextToTokens(values.text).catch(console.error)
     }, [values.text])
 
-    // Convert tokens to displayable React components
-    useEffect(() => {
-        const async_furi = async () => {
-            const result = await convert(tokens);
-
-            setFurigana(result)
-        }
-        async_furi().catch(console.error)
-    }, [tokens, context.vocab])
-
-    // Save CSV changes to local storage
-    useEffect(() => {
-        localStorage.setItem('csv', context.csv)
-    }, [context.csv])
+    // ------------------------------------------
 
     return (
         <>
@@ -219,6 +231,7 @@ export default function Home({ hideSettings }) {
                                                         name="text"
                                                         value={values.text}
                                                         onChange={handleChange}
+                                                        disabled={!kuroshiro}
                                                     />
                                                     <Form.Text id="ControlTextarea2" muted>
                                                         Please type or paste some japanese text
@@ -256,6 +269,7 @@ export default function Home({ hideSettings }) {
                                                             event.persist();
                                                             updateVocab(event.target.value)
                                                         }}
+                                                        disabled={!kuroshiro}
                                                     />
                                                     <Form.Text id="ControlTextarea1" muted>
                                                         A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
@@ -304,13 +318,20 @@ export default function Home({ hideSettings }) {
                     </Card>
                 }
 
-                {isDictReady &&
+                {!!kuroshiro ?
                     <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
                         <VocabContext.Provider value={{ ...context, dispatch }}>
                             {furigana}
                         </VocabContext.Provider>
                     </div>
+
+                    : <div style={{ display: "flex", justifyContent: 'center' }}>
+                        <Spinner />
+                    </div>
+
+
                 }
+
 
             </Container>
         </>
