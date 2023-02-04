@@ -1,6 +1,6 @@
 
 
-const defaultDict = `日本,にほん;にっぽん
+const defaultCSV = `日本,にほん;にっぽん
 方,かた;ほう
 日,にち
 月,がつ
@@ -9,5 +9,5 @@ const defaultDict = `日本,にほん;にっぽん
 `
 
 export {
-    defaultDict
+    defaultCSV
 }

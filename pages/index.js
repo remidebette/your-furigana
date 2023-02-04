@@ -7,7 +7,7 @@ import { Container, Form, Card, Nav, Spinner } from 'react-bootstrap'
 import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
 import { convert } from "../components/rendered_text"
-import { defaultDict } from "../utils/const";
+import { defaultCSV } from "../utils/const";
 import {
     patchTokens,
     isNonEmptyString
@@ -17,35 +17,36 @@ import { UploadDownload } from "../components/files";
 
 export default function Home({ hideSettings }) {
     // Settings tab
-    const [settingKey, setSettingKey] = useState("text");
+    const [settingTab, setSettingTab] = useState("text");
 
 
     // Settings Form
-    const initialState = {
+    const initialFormValues = {
         "apiKey": "",
         "text": ""
     };
-    const { values, setValues, handleChange, handleSubmit } = useForm(
-        initialState,
+    const { formValues, setFormValues, handleFormChange, handleFormSubmit } = useForm(
+        initialFormValues,
         () => { }
     );
 
-    // ------ Kuroshiro dictionary -------
-    const [kuroshiro, setKuroshiro] = useState(null);
 
-    async function initkuroshiro() {
+    // ------ Kuroshiro dictionary -------
+    const [dictionary, setDictionary] = useState(null);
+
+    async function initDictionary() {
         const kuroshiro = new Kuroshiro()
         console.log("Initializing kuroshiro")
         const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" })
         //const analyzer = new MecabAnalyzer();
         await kuroshiro.init(analyzer)
-        setKuroshiro(kuroshiro)
+        setDictionary(kuroshiro)
         console.log("Kuroshiro is ready")
     }
 
     // Init Kuroshiro at first render
     useEffect(() => {
-        initkuroshiro().catch(console.error)
+        initDictionary().catch(console.error)
     }, [])
     // ------------------------------------
 
@@ -81,6 +82,7 @@ export default function Home({ hideSettings }) {
     }
     // -----------------------------------------------------
 
+
     // ------------ Vocab Context ----------------------
     const [context, dispatch] = useReducer(
         vocabReducer,
@@ -92,17 +94,17 @@ export default function Home({ hideSettings }) {
 
     // Init Csv from LocalStorage
     useEffect(() => {
-        if (!kuroshiro) return
-        const storedCsv = localStorage.getItem("csv")
-        updateVocab(isNonEmptyString(storedCsv) ? storedCsv : defaultDict)
-    }, [kuroshiro])
+        if (!dictionary) return
+        const storedCSV = localStorage.getItem("csv")
+        updateVocab(isNonEmptyString(storedCSV) ? storedCSV : defaultCSV)
+    }, [dictionary])
 
 
     // Save CSV to LocalStorage
     useEffect(() => {
-        if (!kuroshiro) return
+        if (!dictionary) return
         localStorage.setItem("csv", context.csv)
-    }, [context.csv, kuroshiro])
+    }, [context.csv, dictionary])
 
 
     function updateVocab(value) {
@@ -114,7 +116,7 @@ export default function Home({ hideSettings }) {
         localStorage.setItem("csv", value)
     }
     // -----------------------------------------------
-    
+
 
     // --------- Vocab reducer -----------------
     function vocabReducer(context, action) {
@@ -151,16 +153,16 @@ export default function Home({ hideSettings }) {
 
 
     // ---------- Tokenized Furigana ----------
-    const [furigana, setFurigana] = useState([]);
+    const [tokens, setTokens] = useState([]);
 
     async function parseTextToTokens(text) {
-        if (!kuroshiro) return
+        if (!dictionary) return
         try {
-            const rawTokens = await kuroshiro._analyzer.parse(text)
+            const rawTokens = await dictionary._analyzer.parse(text)
             const patched = patchTokens(rawTokens)
             const result = await convert(patched)
-            setFurigana(result)
-            localStorage.setItem('text', values.text)
+            setTokens(result)
+            localStorage.setItem('text', formValues.text)
 
         } catch (e) {
             console.error(e)
@@ -169,19 +171,19 @@ export default function Home({ hideSettings }) {
 
     // Init Text from Local storage
     useEffect(() => {
-        if (!kuroshiro) return
+        if (!dictionary) return
         const storedText = localStorage.getItem("text")
         if (!storedText) return
-        setValues(values => ({ ...values, "text": storedText }))
+        setFormValues(formValues => ({ ...formValues, "text": storedText }))
         parseTextToTokens(storedText).catch(console.error)
-    }, [kuroshiro])
+    }, [dictionary])
 
     // Parse Text
     useEffect(() => {
-        parseTextToTokens(values.text).catch(console.error)
-    }, [values.text])
-
+        parseTextToTokens(formValues.text).catch(console.error)
+    }, [formValues.text])
     // ------------------------------------------
+
 
     return (
         <>
@@ -192,7 +194,7 @@ export default function Home({ hideSettings }) {
                             <Nav
                                 variant="tabs"
                                 defaultActiveKey="text"
-                                onSelect={(selectedKey) => setSettingKey(selectedKey)}
+                                onSelect={(selectedTab) => setSettingTab(selectedTab)}
                             >
                                 <Nav.Item>
                                     <Nav.Link eventKey="text">Text</Nav.Link>
@@ -215,7 +217,7 @@ export default function Home({ hideSettings }) {
 
                         <Form>
                             {(function () {
-                                switch (settingKey) {
+                                switch (settingTab) {
                                     case "text":
                                         return <>
                                             <Card.Body>
@@ -229,9 +231,9 @@ export default function Home({ hideSettings }) {
                                                         placeholder="Paste here."
                                                         rows={5}
                                                         name="text"
-                                                        value={values.text}
-                                                        onChange={handleChange}
-                                                        disabled={!kuroshiro}
+                                                        value={formValues.text}
+                                                        onChange={handleFormChange}
+                                                        disabled={!dictionary}
                                                     />
                                                     <Form.Text id="ControlTextarea2" muted>
                                                         Please type or paste some japanese text
@@ -244,9 +246,9 @@ export default function Home({ hideSettings }) {
                                                     className="mb-3"
                                                     //style={{ display: "flex" }}
                                                     label="Or upload / download the text file"
-                                                    setFile={(content) => { setValues({ ...values, "text": content }) }}
+                                                    setFile={(content) => { setFormValues({ ...formValues, "text": content }) }}
                                                     downloadName={"your-furigana-" + new Date().toISOString() + ".txt"}
-                                                    downloadContent={values.text}
+                                                    downloadContent={formValues.text}
                                                 ></UploadDownload>
                                             </Card.Footer>
                                         </>
@@ -269,7 +271,7 @@ export default function Home({ hideSettings }) {
                                                             event.persist();
                                                             updateVocab(event.target.value)
                                                         }}
-                                                        disabled={!kuroshiro}
+                                                        disabled={!dictionary}
                                                     />
                                                     <Form.Text id="ControlTextarea1" muted>
                                                         A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
@@ -305,8 +307,8 @@ export default function Home({ hideSettings }) {
                                                         aria-describedby="api-key"
                                                         required
                                                         name="apiKey"
-                                                        value={values.apiKey}
-                                                        onChange={handleChange}
+                                                        value={formValues.apiKey}
+                                                        onChange={handleFormChange}
                                                     />
                                                 </Form.Group>
                                             </Card.Body>
@@ -318,20 +320,17 @@ export default function Home({ hideSettings }) {
                     </Card>
                 }
 
-                {!!kuroshiro ?
+                {!!dictionary ?
                     <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
                         <VocabContext.Provider value={{ ...context, dispatch }}>
-                            {furigana}
+                            {tokens}
                         </VocabContext.Provider>
                     </div>
 
                     : <div style={{ display: "flex", justifyContent: 'center' }}>
                         <Spinner />
                     </div>
-
-
                 }
-
 
             </Container>
         </>
