@@ -2,12 +2,12 @@ import { useState, useEffect, useReducer } from "react"
 import { usePapaParse } from 'react-papaparse';
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-import { Container, Form, Card, Nav } from 'react-bootstrap'
+import { Container, Form, Card, Nav, Spinner } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
 import useForm from "../utils/useForm";
 import { convert } from "../components/rendered_text"
-import { defaultDict } from "../utils/const";
+import { defaultCSV } from "../utils/const";
 import {
     patchTokens,
     isNonEmptyString
@@ -16,26 +16,109 @@ import { VocabContext } from "../components/vocabContext";
 import { UploadDownload } from "../components/files";
 
 export default function Home({ hideSettings }) {
-    // Form
-    const initialState = {
+    // Settings tab
+    const [settingTab, setSettingTab] = useState("text");
+
+
+    // Settings Form
+    const initialFormValues = {
         "apiKey": "",
         "text": ""
     };
-    const [settingKey, setSettingKey] = useState("text");
-    const { values, setValues, handleChange, handleSubmit } = useForm(
-        initialState,
+    const { formValues, setFormValues, handleFormChange, handleFormSubmit } = useForm(
+        initialFormValues,
         () => { }
     );
 
-    // Kuroshiro
-    const [kuroshiro, setKuroshiro] = useState(new Kuroshiro());
-    const [isDictReady, setIsDictReady] = useState(false);
 
-    // Vocab CSV parsing
+    // ------ Kuroshiro dictionary -------
+    const [dictionary, setDictionary] = useState(null);
+
+    async function initDictionary() {
+        const kuroshiro = new Kuroshiro()
+        console.log("Initializing kuroshiro")
+        const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" })
+        //const analyzer = new MecabAnalyzer();
+        await kuroshiro.init(analyzer)
+        setDictionary(kuroshiro)
+        console.log("Kuroshiro is ready")
+    }
+
+    // Init Kuroshiro at first render
+    useEffect(() => {
+        initDictionary().catch(console.error)
+    }, [])
+    // ------------------------------------
+
+
+    // ------------ Vocab CSV parsing ----------------
     const { readString, jsonToCSV } = usePapaParse();
 
+    function CSV_to_vocab(csv) {
+        const csvString = "kanji,readings\n".concat(csv)
+        readString(csvString, {
+            worker: true,
+            header: true,
+            delimiter: ',',
+            complete: (results) => {
+                let readings = {};
+                //console.log(results.errors);
+                for (const row of results.data) {
+                    if ("kanji" in row && "readings" in row) {
+                        readings[row["kanji"]] = row["readings"]
+                    }
+                }
 
-    // TODO: maintain the CSV updated after a change in Vocab
+                dispatch({ type: "set-vocab", vocab: readings });
+            }
+        })
+    }
+
+    function vocab_to_CSV(vocab) {
+        const results = Object.entries(vocab).map(function (item) {
+            return { "kanji": item[0], "readings": item[1] };
+        })
+        return jsonToCSV(results, { header: false, newline: "\n" })
+    }
+    // -----------------------------------------------------
+
+
+    // ------------ Vocab Context ----------------------
+    const [context, dispatch] = useReducer(
+        vocabReducer,
+        {
+            csv: "",
+            vocab: {}
+        }  // Init value
+    );
+
+    // Init Csv from LocalStorage
+    useEffect(() => {
+        if (!dictionary) return
+        const storedCSV = localStorage.getItem("csv")
+        updateVocab(isNonEmptyString(storedCSV) ? storedCSV : defaultCSV)
+    }, [dictionary])
+
+
+    // Save CSV to LocalStorage
+    useEffect(() => {
+        if (!dictionary) return
+        localStorage.setItem("csv", context.csv)
+    }, [context.csv, dictionary])
+
+
+    function updateVocab(value) {
+        dispatch({
+            type: "set-csv",
+            csv: value
+        })
+        CSV_to_vocab(value)
+        localStorage.setItem("csv", value)
+    }
+    // -----------------------------------------------
+
+
+    // --------- Vocab reducer -----------------
     function vocabReducer(context, action) {
         switch (action.type) {
             case 'set-vocab': {
@@ -66,95 +149,41 @@ export default function Home({ hideSettings }) {
             }
         }
     }
+    // -------------------------------------------------
 
-    // Vocab context
-    const [context, dispatch] = useReducer(
-        vocabReducer,
-        {
-            vocab: {},
-            csv: defaultDict
-        }  // Init value
-    );
 
-    // Text display
+    // ---------- Tokenized Furigana ----------
     const [tokens, setTokens] = useState([]);
-    const [furigana, setFurigana] = useState([]);
 
-    function CSV_to_vocab(csv) {
-        const csvString = "kanji,readings\n".concat(csv)
-        readString(csvString, {
-            worker: true,
-            header: true,
-            delimiter: ',',
-            complete: (results) => {
-                let readings = {};
-                //console.log(results.errors);
-                for (const row of results.data) {
-                    if ("kanji" in row && "readings" in row) {
-                        readings[row["kanji"]] = row["readings"]
-                    }
-                }
+    async function parseTextToTokens(text) {
+        if (!dictionary) return
+        try {
+            const rawTokens = await dictionary._analyzer.parse(text)
+            const patched = patchTokens(rawTokens)
+            const result = await convert(patched)
+            setTokens(result)
+            localStorage.setItem('text', formValues.text)
 
-                dispatch({ type: "set-vocab", vocab: readings });
-            }
-        })
+        } catch (e) {
+            console.error(e)
+        }
     }
 
-    function vocab_to_CSV(vocab) {
-        const results = Object.entries(vocab).map(function (item) {
-            return { "kanji": item[0], "readings": item[1] };
-        })
-        const csv = jsonToCSV(results, { header: false })
-
-        return csv
-    }
-
-    function updateVocab(value) {
-        dispatch({
-            type: "set-csv",
-            csv: value
-        })
-        CSV_to_vocab(value)
-    }
-
-    // Initialize Kuroshiro
+    // Init Text from Local storage
     useEffect(() => {
-        const async_init = async () => {
-            console.log("Initializing kuroshiro");
-            const analyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" });
-            //const analyzer = new MecabAnalyzer();
-            await kuroshiro.init(analyzer);
-            setIsDictReady(true);
-            console.log("Kuroshiro is ready");
-        }
-        async_init().catch(console.error)
-    }, [])
+        if (!dictionary) return
+        const storedText = localStorage.getItem("text")
+        if (!storedText) return
+        setFormValues(formValues => ({ ...formValues, "text": storedText }))
+        parseTextToTokens(storedText).catch(console.error)
+    }, [dictionary])
 
-    // Set Vocab Context from Form CSV. Only the very first time
+    // Parse Text
     useEffect(() => {
-        CSV_to_vocab(context.csv)
-    }, [])
+        parseTextToTokens(formValues.text).catch(console.error)
+    }, [formValues.text])
+    // ------------------------------------------
 
-    // Parse main text to Tokens
-    useEffect(() => {
-        const async_tokens = async () => {
-            const rawTokens = await kuroshiro._analyzer.parse(values.text || "");
-            const patched = patchTokens(rawTokens);
-
-            setTokens(patched)
-        }
-        async_tokens().catch(console.error)
-    }, [values.text])
-
-    // Convert tokens to displayable React components
-    useEffect(() => {
-        const async_furi = async () => {
-            const result = await convert(tokens);
-
-            setFurigana(result)
-        }
-        async_furi().catch(console.error)
-    }, [tokens, context.vocab])
 
     return (
         <>
@@ -165,7 +194,7 @@ export default function Home({ hideSettings }) {
                             <Nav
                                 variant="tabs"
                                 defaultActiveKey="text"
-                                onSelect={(selectedKey) => setSettingKey(selectedKey)}
+                                onSelect={(selectedTab) => setSettingTab(selectedTab)}
                             >
                                 <Nav.Item>
                                     <Nav.Link eventKey="text">Text</Nav.Link>
@@ -188,7 +217,7 @@ export default function Home({ hideSettings }) {
 
                         <Form>
                             {(function () {
-                                switch (settingKey) {
+                                switch (settingTab) {
                                     case "text":
                                         return <>
                                             <Card.Body>
@@ -202,8 +231,9 @@ export default function Home({ hideSettings }) {
                                                         placeholder="Paste here."
                                                         rows={5}
                                                         name="text"
-                                                        value={values.text}
-                                                        onChange={handleChange}
+                                                        value={formValues.text}
+                                                        onChange={handleFormChange}
+                                                        disabled={!dictionary}
                                                     />
                                                     <Form.Text id="ControlTextarea2" muted>
                                                         Please type or paste some japanese text
@@ -216,9 +246,9 @@ export default function Home({ hideSettings }) {
                                                     className="mb-3"
                                                     //style={{ display: "flex" }}
                                                     label="Or upload / download the text file"
-                                                    setFile={(content) => { setValues({ ...values, "text": content }) }}
+                                                    setFile={(content) => { setFormValues({ ...formValues, "text": content }) }}
                                                     downloadName={"your-furigana-" + new Date().toISOString() + ".txt"}
-                                                    downloadContent={values.text}
+                                                    downloadContent={formValues.text}
                                                 ></UploadDownload>
                                             </Card.Footer>
                                         </>
@@ -241,6 +271,7 @@ export default function Home({ hideSettings }) {
                                                             event.persist();
                                                             updateVocab(event.target.value)
                                                         }}
+                                                        disabled={!dictionary}
                                                     />
                                                     <Form.Text id="ControlTextarea1" muted>
                                                         A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
@@ -258,7 +289,7 @@ export default function Home({ hideSettings }) {
                                                         if (trimmed.startsWith("kanji,readings\n")) {
                                                             trimmed = trimmed.slice(15)
                                                         }
-                                                        updateVocab(content) 
+                                                        updateVocab(content)
                                                     }}
                                                     downloadName={"readings-" + new Date().toISOString() + ".csv"}
                                                     downloadContent={"kanji,readings\n".concat(context.csv)}
@@ -276,8 +307,8 @@ export default function Home({ hideSettings }) {
                                                         aria-describedby="api-key"
                                                         required
                                                         name="apiKey"
-                                                        value={values.apiKey}
-                                                        onChange={handleChange}
+                                                        value={formValues.apiKey}
+                                                        onChange={handleFormChange}
                                                     />
                                                 </Form.Group>
                                             </Card.Body>
@@ -285,21 +316,19 @@ export default function Home({ hideSettings }) {
                                 }
                             })()}
 
-
-
-
-
                         </Form>
                     </Card>
                 }
 
-                <br />
-
-                {isDictReady &&
+                {!!dictionary ?
                     <div lang="ja" className={styles.japanese} style={{ whiteSpace: "pre-wrap" }}>
                         <VocabContext.Provider value={{ ...context, dispatch }}>
-                            {furigana}
+                            {tokens}
                         </VocabContext.Provider>
+                    </div>
+
+                    : <div style={{ display: "flex", justifyContent: 'center' }}>
+                        <Spinner />
                     </div>
                 }
 
