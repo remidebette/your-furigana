@@ -51,6 +51,10 @@ to the *Text* tab!
 
 - The powerful, in-browser React CSV parser for big boys and girls.
 
+[**Serwist**](https://serwist.pages.dev/)
+
+- Makes the app an installable Progressive Web App that works offline, including the Japanese dictionary.
+
 [**Vercel Deployment**](https://vercel.com/)
 
 - Ready to deploy on Vercel using git integration or the command line
@@ -88,6 +92,14 @@ Launch a server for server-side rendering (after building the application):
 ```
 yarn start
 ```
+
+### Progressive Web App
+
+The service worker (`worker/sw.js`) is built by Serwist through the `app/serwist/[path]` route and served at `/serwist/sw.js`.
+It is disabled with `yarn dev`: use `yarn build && yarn start` to try it, then check *Application* in the browser dev tools.
+
+The app shell is precached. The kuromoji dictionary (`public/data/dict`, ~18 MB) is kept out of the precache so it is not
+downloaded again on each deploy: it is cached once at runtime, then always served from the cache.
 
 ### Lint and test
 

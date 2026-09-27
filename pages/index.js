@@ -42,6 +42,8 @@ export default function Home({ hideSettings }) {
         await kuroshiro.init(analyzer)
         setDictionary(kuroshiro)
         console.log("Kuroshiro is ready")
+        // Ask the browser not to evict the cached dictionary (used offline) under storage pressure
+        navigator.storage?.persist?.().catch(console.error)
     }
 
     // Init Kuroshiro at first render
