@@ -1,5 +1,4 @@
 import { useState, useEffect, useReducer, useRef, useMemo, useCallback } from "react"
-import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import { Container, Spinner } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
@@ -7,6 +6,7 @@ import { FuriganaText, segmentText } from "../components/rendered_text"
 import { defaultCSV } from "../utils/const";
 import { isNonEmptyString } from "../utils/util";
 import { useDebouncedValue } from "../utils/hooks";
+import { createTokenizer } from "../utils/tokenizer";
 import { loadItem, saveItem } from "../utils/storage";
 import { vocabReducer, initialVocabState, vocabStateToCsv } from "../utils/vocab";
 import { SettingsCard } from "../components/settings";
@@ -21,15 +21,14 @@ export default function Home({ hideSettings }) {
     const [apiKey, setApiKey] = useState("");
 
 
-    // ------ Kuromoji analyzer -------
+    // ------ Tokenizer (Lindera + IPADIC in WebAssembly) -------
     const [analyzer, setAnalyzer] = useState(null);
 
     useEffect(() => {
         let cancelled = false
-        const newAnalyzer = new KuromojiAnalyzer({ dictPath: "/data/dict" })
-        newAnalyzer.init().then(() => {
+        createTokenizer().then((tokenizer) => {
             if (cancelled) return
-            setAnalyzer(newAnalyzer)
+            setAnalyzer(tokenizer)
             // Ask the browser not to evict the cached dictionary (used offline) under storage pressure
             navigator.storage?.persist?.().catch(console.error)
         }).catch(console.error)

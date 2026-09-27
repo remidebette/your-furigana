@@ -39,17 +39,17 @@ to the *Text* tab!
 
 - The composable front end framework Bootstrap adapted for React.
 
-[**Kuroshiro**](https://kuroshiro.org/)
+[**Lindera**](https://github.com/lindera/lindera) in WebAssembly
 
-- A pure JavaScript Japanese Tokenizer.
+- A Rust morphological analyzer, compiled to a small WebAssembly module (`wasm/`) to split Japanese text into words and find their readings.
 
-[**Kuromoji**](https://www.atilika.com/ja/kuromoji/)
+[**IPADIC**](https://github.com/taku910/mecab)
 
-- A Japanese Dictionary used as a morphological analyzer for Kuroshiro.
+- The Japanese dictionary used by the analyzer.
 
-[**React Papaparse**](https://react-papaparse.js.org/)
+[**Papa Parse**](https://www.papaparse.com/)
 
-- The powerful, in-browser React CSV parser for big boys and girls.
+- The powerful, in-browser CSV parser for big boys and girls.
 
 [**Serwist**](https://serwist.pages.dev/)
 
@@ -98,8 +98,23 @@ yarn start
 The service worker (`worker/sw.js`) is built by Serwist through the `app/serwist/[path]` route and served at `/serwist/sw.js`.
 It is disabled with `yarn dev`: use `yarn build && yarn start` to try it, then check *Application* in the browser dev tools.
 
-The app shell is precached. The kuromoji dictionary (`public/data/dict`, ~18 MB) is kept out of the precache so it is not
+The app shell is precached. The dictionary (`public/data/ipadic`, ~10 MB) is kept out of the precache so it is not
 downloaded again on each deploy: it is cached once at runtime, then always served from the cache.
+
+### Japanese tokenizer (WebAssembly)
+
+The text is split into words, with their readings, by [Lindera](https://github.com/lindera/lindera) compiled to WebAssembly
+(`wasm/`, ~40 lines of Rust). The dictionary is not embedded in the module: the app downloads the IPADIC files from
+`public/data/ipadic` and hands them to the tokenizer, which returns all the tokens of a text in one packed string.
+
+The build outputs (`lib/furigana-wasm/`, `public/data/ipadic/` and `public/THIRD_PARTY_NOTICES.txt`) are committed, so
+the Rust toolchain is only needed to change the Rust code or upgrade Lindera:
+
+```shell
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129
+wasm/build.sh
+```
 
 ### Lint and test
 
@@ -109,5 +124,8 @@ yarn test
 ```
 
 ## License
+
+The dictionary and the libraries compiled into the tokenizer come with their own licenses, all permissive: see
+[THIRD_PARTY_NOTICES.txt](public/THIRD_PARTY_NOTICES.txt), also linked from the footer of the app.
 
 Released under the [MIT](https://github.com/remidebette/your-furigana/blob/master/LICENSE.txt) license.

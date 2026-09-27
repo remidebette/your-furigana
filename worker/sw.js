@@ -1,21 +1,12 @@
 import { defaultCache } from '@serwist/turbopack/worker'
 import { CacheableResponsePlugin, CacheFirst, Serwist } from 'serwist'
 
-const DICT_CACHE = 'kuromoji-dict'
+const DICT_CACHE = 'ipadic-dict'
 const DICT_FILES = [
-    'base.dat.gz',
-    'cc.dat.gz',
-    'check.dat.gz',
-    'tid.dat.gz',
-    'tid_map.dat.gz',
-    'tid_pos.dat.gz',
-    'unk.dat.gz',
-    'unk_char.dat.gz',
-    'unk_compat.dat.gz',
-    'unk_invoke.dat.gz',
-    'unk_map.dat.gz',
-    'unk_pos.dat.gz',
-].map((file) => `/data/dict/${file}`)
+    'metadata.json', 'char_def.bin', 'matrix.mtx',
+    'dict.trie', 'dict.valsidx', 'dict.vals', 'dict.wordsidx', 'dict.words',
+    'unk.bin',
+].map((file) => `/data/ipadic/${file}.gz`)
 
 const serwist = new Serwist({
     // Injected at build time: the app shell (Next.js static assets, the home page, public files)
@@ -24,10 +15,10 @@ const serwist = new Serwist({
     clientsClaim: true,
     navigationPreload: true,
     runtimeCaching: [
-        // The kuromoji dictionary (~18 MB) never changes: fetch it once on first use,
+        // The IPADIC dictionary (~10 MB) never changes: fetch it once on first use,
         // then always serve it from the cache so the app works offline.
         {
-            matcher: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/data/dict/'),
+            matcher: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/data/ipadic/'),
             handler: new CacheFirst({
                 cacheName: DICT_CACHE,
                 plugins: [new CacheableResponsePlugin({ statuses: [200] })],

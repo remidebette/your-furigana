@@ -28,7 +28,7 @@ export function tokensToSegments(tokens) {
         const surface = token.surface_form;
         const reading = toRawHiragana(token.reading);
         const type = getStrType(surface);
-        // No furigana for kana and symbols, nor for words kuromoji doesn't know
+        // No furigana for kana and symbols, nor for words the dictionary doesn't know
         // (their "reading" is the surface form itself, kanji included)
         if (type === StrType.KANA || type === StrType.OTHER || [...reading].some(isKanji)) {
             pushSegment(segments, surface);
