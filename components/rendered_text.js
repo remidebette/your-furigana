@@ -4,11 +4,11 @@ import {
     StrType,
     getStrType,
     patchTokens,
-    isKatakana,
     isKanji,
     toRawHiragana,
     isNonEmptyString
 } from "../utils/util";
+import { splitFurigana } from "../utils/furigana";
 
 // A segment is either a plain string, or { text, reading } for kanji that can get furigana.
 // Adjacent plain strings are merged to keep the number of rendered nodes low.
@@ -22,61 +22,28 @@ function pushSegment(segments, text, reading) {
     }
 }
 
-// See https://github.com/hexenq/kuroshiro/blob/3acf1a83e18812410482c8877f3f65f1db264ace/src/kuroshiro.js#L185
 export function tokensToSegments(tokens) {
     const segments = [];
     for (const token of patchTokens(tokens)) {
-        const hiraganaReading = toRawHiragana(token.reading);
-        switch (getStrType(token.surface_form)) {
-            case StrType.KANJI:
-                pushSegment(segments, token.surface_form, hiraganaReading);
-                break;
-            case StrType.MIXED: {
-                // TODO: better handle the case where all kanjis are in vocab
-                let pattern = "";
-                let isLastTokenKanji = false;
-                const subs = []; // recognize kanjis and group them
-                for (const character of token.surface_form) {
-                    if (isKanji(character)) {
-                        if (!isLastTokenKanji) { // ignore successive kanji tokens (#10)
-                            isLastTokenKanji = true;
-                            pattern += "(.*)";
-                            subs.push(character);
-                        }
-                        else {
-                            subs[subs.length - 1] += character;
-                        }
-                    }
-                    else {
-                        isLastTokenKanji = false;
-                        subs.push(character);
-                        pattern += isKatakana(character) ? toRawHiragana(character) : character;
-                    }
-                }
-                const matches = new RegExp(`^${pattern}$`).exec(hiraganaReading);
-                if (matches) {
-                    let pickKanji = 1;
-                    for (const sub_char of subs) {
-                        if (isKanji(sub_char[0])) {
-                            pushSegment(segments, sub_char, matches[pickKanji]);
-                            pickKanji += 1;
-                        }
-                        else {
-                            pushSegment(segments, sub_char);
-                        }
-                    }
-                }
-                else {
-                    pushSegment(segments, token.surface_form, hiraganaReading);
-                }
-                break;
-            }
-            case StrType.KANA:
-            case StrType.OTHER:
-                pushSegment(segments, token.surface_form);
-                break;
-            default:
-                throw new Error("Unknown strType");
+        const surface = token.surface_form;
+        const reading = toRawHiragana(token.reading);
+        const type = getStrType(surface);
+        // No furigana for kana and symbols, nor for words kuromoji doesn't know
+        // (their "reading" is the surface form itself, kanji included)
+        if (type === StrType.KANA || type === StrType.OTHER || [...reading].some(isKanji)) {
+            pushSegment(segments, surface);
+            continue;
+        }
+        // TODO: better handle the case where all kanjis are in vocab
+        const pieces = splitFurigana(surface, reading);
+        if (!pieces) {
+            // The reading doesn't fit the word: show it over the whole word
+            pushSegment(segments, surface, reading);
+            continue;
+        }
+        for (const piece of pieces) {
+            if (typeof piece === "string") pushSegment(segments, piece);
+            else pushSegment(segments, piece.text, piece.reading);
         }
     }
     return segments;
