@@ -16,6 +16,15 @@ describe('tokensToSegments', () => {
     it('splits kanji and kana in mixed words', () => {
         expect(tokensToSegments([token('読み', 'ヨミ')])).toEqual([{ text: '読', reading: 'よ' }, 'み'])
     })
+
+    it('shows no furigana for words kuromoji has no reading for', () => {
+        // patchTokens uses the surface form as reading: the kanji themselves
+        expect(tokensToSegments([{ surface_form: '鬱鬱', pos: '名詞' }])).toEqual(['鬱鬱'])
+    })
+
+    it('puts the reading over the whole word when it does not fit the kana', () => {
+        expect(tokensToSegments([token('河原ぶろ', 'カワラ')])).toEqual([{ text: '河原ぶろ', reading: 'かわら' }])
+    })
 })
 
 describe('segmentText', () => {
