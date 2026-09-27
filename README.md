@@ -15,14 +15,15 @@ since he is trying to master them.
 On the contrary, Furigana can be a precious tool when one wishes to read real-life Japanese text which never contains only text 
 he might already know. 
 
-Today, Kanji memorisation apps (such as Wanikani) can provide to a user a list of the known Kanji pronunciations at a certain time.
-With **Your Furigana**, the user can input this list as a CSV and copy-paste any Japanese text from the Web to get just the help he 
-needs to read through it.
+Today, Kanji memorisation apps (such as WaniKani) know which Kanji pronunciations a user has learned at a certain time.
+With **Your Furigana**, the user imports this progress from WaniKani (or edits a list of known readings as a CSV) and copy-pastes
+any Japanese text from the Web to get just the help he needs to read through it. Compounds are recognised from the readings of
+their Kanji: knowing 学 (がく) and 校 (こう) is enough to read 学校 (がっこう) without help, and a click on any word toggles its furigana.
 
 A sample PoC page is deployed [here](http://your-furigana.vercel.app/).  
 This is shared as a showcase of a Next.js architecture
 
-Test it by copying and pasting this [sample CSV file](https://raw.githubusercontent.com/remidebette/your-furigana/master/public/data/assignments_ids.csv) to the *Readings* tab and any text from a [Wikipedia random page in Japanese](https://ja.wikipedia.org/wiki/%E7%89%B9%E5%88%A5:%E3%81%8A%E3%81%BE%E3%81%8B%E3%81%9B%E8%A1%A8%E7%A4%BA)
+Test it with your WaniKani API token in the *WaniKani* tab, or by copying and pasting this [sample CSV file](https://raw.githubusercontent.com/remidebette/your-furigana/master/public/data/assignments_ids.csv) to the *Readings* tab and any text from a [Wikipedia random page in Japanese](https://ja.wikipedia.org/wiki/%E7%89%B9%E5%88%A5:%E3%81%8A%E3%81%BE%E3%81%8B%E3%81%9B%E8%A1%A8%E7%A4%BA)
 to the *Text* tab!
 
 ## Features

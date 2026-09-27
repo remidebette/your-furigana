@@ -1,40 +1,68 @@
 import Papa from 'papaparse'
+import { splitFurigana } from './furigana'
+import { EXCEPTION_PREFIX, isKnownReading } from './known'
+import { hasKana, toRawHiragana } from './util'
 
 // Known readings are edited as CSV lines, "kanji,reading1;reading2", and kept in memory
 // as a Map { kanji => Set { reading1, reading2 } } for constant-time lookups while rendering.
+// A reading starting with "-" is an exception, see utils/known.js.
 
 const HEADER_NAMES = ['kanji', 'char']
 
+// The text is looked up by kanji groups (see utils/furigana.js): a word with okurigana is
+// stored as its kanji groups, 一つ,ひとつ -> 一,ひと and 入れる,いれる -> 入,い
+export function knownEntries(word, reading) {
+    if (reading.startsWith(EXCEPTION_PREFIX)) return [[word, reading]]
+    const hiragana = toRawHiragana(reading)
+    const pieces = hasKana(word) && splitFurigana(word, hiragana)
+    if (!pieces) return [[word, hiragana]]
+    return pieces.filter((piece) => typeof piece !== 'string').map((piece) => [piece.text, piece.reading])
+}
+
+// Adds readings, creating a new Set only for the words that change (their paragraphs re-render)
+export function addReadings(known, entries) {
+    const result = new Map(known)
+    for (const [word, reading] of entries) {
+        const readings = result.get(word)
+        if (readings?.has(reading)) continue
+        result.set(word, new Set(readings).add(reading))
+    }
+    return result
+}
+
 export function csvToKnown(csv) {
     const { data } = Papa.parse(csv.trim(), { skipEmptyLines: true })
-    const known = new Map()
-    for (const [kanji, readings] of data) {
-        if (!kanji || readings === undefined) continue
+    const entries = []
+    for (const [word, readings] of data) {
+        if (!word || readings === undefined) continue
         // Skip the header line of downloaded / sample files
-        if (HEADER_NAMES.includes(kanji.trim()) && readings.trim() === 'readings') continue
-        // A kanji can appear on several lines (e.g. as a kanji and in a vocabulary word): merge them
-        const set = known.get(kanji.trim()) ?? new Set()
+        if (HEADER_NAMES.includes(word.trim()) && readings.trim() === 'readings') continue
+        // A kanji can appear on several lines (e.g. as a kanji and in a vocabulary word): they are merged
         for (const reading of readings.split(';')) {
-            if (reading.trim()) set.add(reading.trim())
+            if (reading.trim()) entries.push(...knownEntries(word.trim(), reading.trim()))
         }
-        known.set(kanji.trim(), set)
     }
-    return known
+    return addReadings(new Map(), entries)
 }
 
 export function knownToCsv(known) {
     return Papa.unparse([...known].map(([kanji, readings]) => [kanji, [...readings].join(';')]), { newline: '\n' })
 }
 
-// Returns a new Map where only the toggled kanji has a new Set:
+// Returns a new Map where only the toggled word has a new Set:
 // the other entries keep their identity, so unaffected paragraphs don't re-render.
-function toggleReading(known, char, reading) {
-    const readings = new Set(known.get(char))
-    if (readings.has(reading)) readings.delete(reading)
-    else readings.add(reading)
+function toggleReading(known, word, reading) {
+    const wasKnown = isKnownReading(known, word, reading)
+    const readings = new Set(known.get(word))
+    readings.delete(reading)
+    readings.delete(EXCEPTION_PREFIX + reading)
     const newKnown = new Map(known)
-    if (readings.size) newKnown.set(char, readings)
-    else newKnown.delete(char)
+    newKnown.set(word, readings)
+    // Known through its kanji (学校 from 学 and 校): only an exception shows its furigana again
+    const knownWithoutEntry = isKnownReading(newKnown, word, reading)
+    if (wasKnown && knownWithoutEntry) readings.add(EXCEPTION_PREFIX + reading)
+    if (!wasKnown && !knownWithoutEntry) readings.add(reading)
+    if (!readings.size) newKnown.delete(word)
     return newKnown
 }
 
@@ -60,6 +88,11 @@ export function vocabReducer(state, action) {
             // Apply pending edits of the textarea first, so they are not lost
             const known = state.edited ? csvToKnown(state.csv) : state.known
             return { csv: null, known: toggleReading(known, action.char, action.reading), edited: false }
+        }
+        // Import (e.g. from WaniKani): only adds readings, manual changes are kept
+        case 'add-readings': {
+            const known = state.edited ? csvToKnown(state.csv) : state.known
+            return { csv: null, known: addReadings(known, action.entries), edited: false }
         }
         default:
             throw new Error('Unknown action: ' + action.type)

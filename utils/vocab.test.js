@@ -1,4 +1,5 @@
-import { csvToKnown, knownToCsv, vocabReducer, initialVocabState, vocabStateToCsv } from './vocab'
+import { csvToKnown, knownToCsv, knownEntries, vocabReducer, initialVocabState, vocabStateToCsv } from './vocab'
+import { isKnownReading } from './known'
 
 const asObject = (known) => Object.fromEntries([...known].map(([k, v]) => [k, [...v]]))
 
@@ -66,5 +67,41 @@ describe('vocabReducer', () => {
         const toggled = vocabReducer(edited, { type: 'toggle', char: '日', reading: 'ひ' })
         expect(vocabStateToCsv(toggled)).toBe('日,にち;ひ\n火,か')
         expect(vocabReducer(toggled, { type: 'parse-csv' })).toBe(toggled)
+    })
+})
+
+describe('knownEntries', () => {
+    it('stores words with okurigana as their kanji groups', () => {
+        expect(knownEntries('一つ', 'ひとつ')).toEqual([['一', 'ひと']])
+        expect(knownEntries('取り扱い', 'とりあつかい')).toEqual([['取', 'と'], ['扱', 'あつか']])
+        expect(knownEntries('アメリカ人', 'アメリカじん')).toEqual([['人', 'じん']])
+        expect(knownEntries('日本', 'ニホン')).toEqual([['日本', 'にほん']])
+        expect(knownEntries('学校', '-がっこう')).toEqual([['学校', '-がっこう']])
+    })
+
+    it('fixes old csv files storing whole words', () => {
+        expect(knownToCsv(csvToKnown('一つ,ひとつ\n入る,はいる'))).toBe('一,ひと\n入,はい')
+    })
+})
+
+describe('toggle with compounds', () => {
+    const state = vocabReducer(initialVocabState, { type: 'load-csv', csv: '学,がく\n校,こう' })
+
+    it('adds an exception to show the furigana of a compound known through its kanji', () => {
+        const shown = vocabReducer(state, { type: 'toggle', char: '学校', reading: 'がっこう' })
+        expect(isKnownReading(shown.known, '学校', 'がっこう')).toBe(false)
+        expect(vocabStateToCsv(shown)).toBe('学,がく\n校,こう\n学校,-がっこう')
+        const hidden = vocabReducer(shown, { type: 'toggle', char: '学校', reading: 'がっこう' })
+        expect(isKnownReading(hidden.known, '学校', 'がっこう')).toBe(true)
+        expect(vocabStateToCsv(hidden)).toBe('学,がく\n校,こう')
+    })
+})
+
+describe('add-readings', () => {
+    it('only adds, keeping manual changes and the Sets that do not change', () => {
+        const state = vocabReducer(initialVocabState, { type: 'load-csv', csv: '日,にち\n学校,-がっこう' })
+        const added = vocabReducer(state, { type: 'add-readings', entries: [['日', 'にち'], ['月', 'がつ']] })
+        expect(vocabStateToCsv(added)).toBe('日,にち\n学校,-がっこう\n月,がつ')
+        expect(added.known.get('日')).toBe(state.known.get('日'))
     })
 })
