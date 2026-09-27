@@ -15,7 +15,7 @@ export function UploadDownload({ label, setFile, downloadName, downloadContent, 
 
         const element = document.createElement("a")
         element.href = URL.createObjectURL(file);
-        element.download = downloadName;
+        element.download = typeof downloadName === "function" ? downloadName() : downloadName;
 
         document.body.appendChild(element)
         element.click();

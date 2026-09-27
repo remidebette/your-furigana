@@ -32,4 +32,16 @@ describe('segmentText', () => {
         expect([...cache.keys()]).toEqual(['abc', 'xyz'])
         expect(await segmentText(analyzer, '', cache)).toEqual([])
     })
+
+    it('shares the segments of repeated lines', async () => {
+        const cache = new Map()
+        analyzer.parse.mockClear()
+        const first = await segmentText(analyzer, 'abc\n\nabc\n', cache)
+        expect(analyzer.parse).toHaveBeenCalledTimes(2)
+        expect(first[2]).toBe(first[0])
+        expect(first[3]).toBe(first[1])
+        // Editing the last line keeps the identity of the others
+        const second = await segmentText(analyzer, 'abc\n\nabc\nx', cache)
+        expect(second.slice(0, 3).every((segments, i) => segments === first[i])).toBe(true)
+    })
 })

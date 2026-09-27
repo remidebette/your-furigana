@@ -3,7 +3,7 @@ import Document, { Html, Head, Main, NextScript } from 'next/document'
 class MyDocument extends Document {
     render() {
         return (
-            <Html lang="fr">
+            <Html lang="en">
                 <Head>
                     <link rel='manifest' href='/manifest.webmanifest' />
                     <link rel='icon' type='image/png' sizes='32x32' href='/icons/favicon-32.png' />

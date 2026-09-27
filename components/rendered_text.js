@@ -88,12 +88,13 @@ export function tokensToSegments(tokens) {
 export async function segmentText(analyzer, text, cache) {
     if (text === "") return [];
     const lines = text.split(/\r?\n/);
-    const paragraphs = await Promise.all(lines.map(async (line) =>
-        cache.get(line) ?? tokensToSegments(await analyzer.parse(line))
-    ));
+    // Tokenize each distinct line once: repeated lines (blank ones especially) share their segments
+    const segmentsByLine = new Map(await Promise.all([...new Set(lines)].map(async (line) =>
+        [line, cache.get(line) ?? tokensToSegments(await analyzer.parse(line))]
+    )));
     cache.clear();
-    lines.forEach((line, i) => cache.set(line, paragraphs[i]));
-    return paragraphs;
+    segmentsByLine.forEach((segments, line) => cache.set(line, segments));
+    return lines.map((line) => segmentsByLine.get(line));
 }
 
 // Only re-renders when its own known state changes, not when another reading is toggled

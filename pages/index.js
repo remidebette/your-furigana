@@ -1,6 +1,6 @@
 import { useState, useEffect, useReducer, useRef, useMemo, useCallback } from "react"
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-import { Container, Form, Card, Nav, Spinner } from 'react-bootstrap'
+import { Container, Spinner } from 'react-bootstrap'
 
 import styles from '../styles/japanese.module.css'
 import { FuriganaText, segmentText } from "../components/rendered_text"
@@ -9,7 +9,7 @@ import { isNonEmptyString } from "../utils/util";
 import { useDebouncedValue } from "../utils/hooks";
 import { loadItem, saveItem } from "../utils/storage";
 import { vocabReducer, initialVocabState, vocabStateToCsv } from "../utils/vocab";
-import { UploadDownload } from "../components/files";
+import { SettingsCard } from "../components/settings";
 
 // Wait for a pause in typing before re-rendering the furigana or parsing the readings
 const TEXT_DEBOUNCE_MS = 150
@@ -43,12 +43,21 @@ export default function Home({ hideSettings }) {
     const knownReadings = vocabState.known;
     const onToggle = useCallback((char, reading) => dispatch({ type: "toggle", char, reading }), []);
 
+    // Stable callbacks, so the memoized <SettingsCard> skips re-rendering on toggles
     const csvParseTimeout = useRef(null)
-    function editCsv(value) {
+    const editCsv = useCallback((value) => {
         dispatch({ type: "edit-csv", csv: value })
         clearTimeout(csvParseTimeout.current)
         csvParseTimeout.current = setTimeout(() => dispatch({ type: "parse-csv" }), CSV_DEBOUNCE_MS)
-    }
+    }, [])
+    const uploadCsv = useCallback((content) => {
+        const trimmed = content.trim()
+        dispatch({
+            type: "load-csv",
+            // Drop the header line added by the download button
+            csv: trimmed.startsWith("kanji,readings\n") ? trimmed.slice(15) : trimmed
+        })
+    }, [])
 
     // Only generate the CSV text while the readings tab is shown, not on every toggle
     const showCsv = !hideSettings && settingTab === "readings"
@@ -118,133 +127,18 @@ export default function Home({ hideSettings }) {
         <>
             <Container>
                 {!hideSettings &&
-                    <Card className="mb-3">
-                        <Card.Header>
-                            <Nav
-                                variant="tabs"
-                                defaultActiveKey="text"
-                                onSelect={(selectedTab) => setSettingTab(selectedTab)}
-                            >
-                                <Nav.Item>
-                                    <Nav.Link eventKey="text">Text</Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="readings">Readings</Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="wanikani" disabled
-                                    >
-                                        Wanikani
-                                    </Nav.Link>
-                                </Nav.Item>
-                            </Nav>
-                        </Card.Header>
-                        {/*<Card.Title>Special title treatment</Card.Title>
-                            <Card.Text>
-                                With supporting text below as a natural lead-in to additional content.
-                </Card.Text>*/}
-
-                        <Form>
-                            {(function () {
-                                switch (settingTab) {
-                                    case "text":
-                                        return <>
-                                            <Card.Body>
-                                                <Form.Group
-                                                    controlId="exampleForm.ControlTextarea2"
-                                                    className="mb-3"
-                                                >
-                                                    <Form.Label>Your text</Form.Label>
-                                                    <Form.Control
-                                                        as="textarea"
-                                                        placeholder="Paste here."
-                                                        rows={5}
-                                                        name="text"
-                                                        value={text}
-                                                        onChange={(event) => setText(event.target.value)}
-                                                        disabled={!analyzer}
-                                                    />
-                                                    <Form.Text id="ControlTextarea2" muted>
-                                                        Please type or paste some japanese text
-                                                    </Form.Text>
-                                                </Form.Group>
-                                            </Card.Body>
-                                            <Card.Footer>
-                                                <UploadDownload
-                                                    controlId="formFile"
-                                                    className="mb-3"
-                                                    //style={{ display: "flex" }}
-                                                    label="Or upload / download the text file"
-                                                    setFile={setText}
-                                                    downloadName={"your-furigana-" + new Date().toISOString() + ".txt"}
-                                                    downloadContent={text}
-                                                ></UploadDownload>
-                                            </Card.Footer>
-                                        </>
-
-                                    case "readings":
-                                        return <>
-                                            <Card.Body>
-                                                <Form.Group
-                                                    controlId="exampleForm.ControlTextarea1"
-                                                    className="mb-3"
-                                                >
-                                                    <Form.Label>Readings Data</Form.Label>
-                                                    <Form.Control
-                                                        as="textarea"
-                                                        placeholder="Paste here."
-                                                        rows={5}
-                                                        name="csv"
-                                                        value={csvText}
-                                                        onChange={(event) => editCsv(event.target.value)}
-                                                        disabled={!analyzer}
-                                                    />
-                                                    <Form.Text id="ControlTextarea1" muted>
-                                                        A list of kanjis and readings to ignore, in the format &quot;kanji,reading1;reading2;reading3&quot;
-                                                    </Form.Text>
-                                                </Form.Group>
-                                            </Card.Body>
-                                            <Card.Footer>
-                                                <UploadDownload
-                                                    controlId="formFile2"
-                                                    className="mb-3"
-                                                    //style={{ display: "flex" }}
-                                                    label="Or upload / download the readings file"
-                                                    setFile={(content) => {
-                                                        const trimmed = content.trim()
-                                                        dispatch({
-                                                            type: "load-csv",
-                                                            // Drop the header line added by the download button
-                                                            csv: trimmed.startsWith("kanji,readings\n") ? trimmed.slice(15) : trimmed
-                                                        })
-                                                    }}
-                                                    downloadName={"readings-" + new Date().toISOString() + ".csv"}
-                                                    downloadContent={"kanji,readings\n".concat(csvText)}
-                                                ></UploadDownload>
-                                            </Card.Footer>
-                                        </>
-                                    case "wanikani":
-                                        return <>
-                                            <Card.Body>
-                                                <Form.Group controlId="exampleForm.ControlInput1">
-                                                    <Form.Label>API Key</Form.Label>
-                                                    <Form.Control
-                                                        placeholder="API Key"
-                                                        aria-label="API Key"
-                                                        aria-describedby="api-key"
-                                                        required
-                                                        name="apiKey"
-                                                        value={apiKey}
-                                                        onChange={(event) => setApiKey(event.target.value)}
-                                                    />
-                                                </Form.Group>
-                                            </Card.Body>
-                                        </>
-                                }
-                            })()}
-
-                        </Form>
-                    </Card>
+                    <SettingsCard
+                        tab={settingTab}
+                        onTabChange={setSettingTab}
+                        text={text}
+                        onTextChange={setText}
+                        csvText={csvText}
+                        onCsvChange={editCsv}
+                        onCsvUpload={uploadCsv}
+                        apiKey={apiKey}
+                        onApiKeyChange={setApiKey}
+                        disabled={!analyzer}
+                    />
                 }
 
                 {analyzer ?
