@@ -51,15 +51,13 @@ to the *Text* tab!
 
 - The powerful, in-browser React CSV parser for big boys and girls.
 
-[**Next PWA**](https://www.npmjs.com/package/next-pwa)
-
-- Easily create a Progressive Web App with Next.js.
-
 [**Vercel Deployment**](https://vercel.com/)
 
 - Ready to deploy on Vercel using git integration or the command line
 
 ## Installation
+
+Requires Node.js 20.9 or later (Node 22 LTS recommended).
 
 Clone the repository and install the dependencies:
 
@@ -91,10 +89,11 @@ Launch a server for server-side rendering (after building the application):
 yarn start
 ```
 
-Generate a fully static project with pre-rendered pages to put directly on a server or any static website hosting platform. Note that you lose the possibility to have server-side rendered pages. With Vercel you should not have to run this command.
+### Lint and test
 
 ```
-yarn export
+yarn lint
+yarn test
 ```
 
 ## License

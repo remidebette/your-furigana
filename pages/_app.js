@@ -1,11 +1,11 @@
-import '../styles/index.css'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 import Head from 'next/head'
 import Link from 'next/link'
 
 import { useState } from "react"
 
-import { Navbar, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
+import { Navbar, Nav, Button } from 'react-bootstrap'
 
 import { Footer } from '../components/footer'
 
@@ -15,13 +15,13 @@ function MyApp({ Component, pageProps }) {
     return (
         <>
             <Head>
-        /*        <meta charSet='utf-8' />
-                <meta httpEquiv='X-UA-Compatible' content='IE=edge' />*/
+        {/*        <meta charSet='utf-8' />
+                <meta httpEquiv='X-UA-Compatible' content='IE=edge' />*/}
                 <meta name='viewport' content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover' />
                 <meta name='description' content='Display furigana according to your own level on any text.' />
                 <meta name='keywords' content='wanikani' />
                 <title>Your Furigana</title>
-        /*
+        {/*
 
                 <link rel='manifest' href='/manifest.json' />
                 <link rel='icon' sizes='16x16' type='image/png' href='/icons/favicon-16x16.png' />
@@ -42,7 +42,7 @@ function MyApp({ Component, pageProps }) {
 
                 <link rel='mask-icon' href='/icons/safari-pinned-tab.svg' color='#5bbad5' />
                 <link rel='shortcut icon' href='/icons/favicon.ico' />
-                */
+
 
 
                 <meta name='theme-color' content='#000000' />
@@ -70,11 +70,11 @@ function MyApp({ Component, pageProps }) {
                 <meta property='og:site_name' content='' />
                 <meta property='og:url' content='https://yourdomain.com' />
                 <meta property='og:image' content='https://yourdomain.com/icons/apple-icon.png' />
-                */
+                */}
             </Head>
 
             <Navbar sticky="top" expand="lg" style={{ "padding": "1rem" }} bg="white">
-                <Link href="/" passHref><Navbar.Brand>Your Furigana</Navbar.Brand></Link>
+                <Navbar.Brand as={Link} href="/">Your Furigana</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
                     <Button

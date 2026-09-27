@@ -274,7 +274,7 @@ export default function Home({ hideSettings }) {
                                                         disabled={!dictionary}
                                                     />
                                                     <Form.Text id="ControlTextarea1" muted>
-                                                        A list of kanjis and readings to ignore, in the format "kanji,reading1;reading2;reading3"
+                                                        A list of kanjis and readings to ignore, in the format &quot;kanji,reading1;reading2;reading3&quot;
                                                     </Form.Text>
                                                 </Form.Group>
                                             </Card.Body>

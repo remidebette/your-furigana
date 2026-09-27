@@ -1,5 +1,4 @@
 import { useContext } from "react"
-import { tokenize, toHiragana } from 'wanakana';
 import {
     ROMANIZATION_SYSTEM,
     StrType,
