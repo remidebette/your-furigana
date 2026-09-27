@@ -1,5 +1,4 @@
 import { useContext } from "react"
-import { tokenize, toHiragana } from 'wanakana';
 import {
     ROMANIZATION_SYSTEM,
     StrType,
@@ -49,7 +48,8 @@ function JapaneseChar({char, reading}) {
     }
 
     return (<div onClick={addToVocab} style={{ display: "inline" }}>
-        {deactivate ? char : <ruby>{char}<rp></rp><rt>{reading}</rt><rp></rp></ruby> }
+        {/* Kana have no reading: keep them as plain text, as browsers don't break lines between adjacent <ruby> elements */}
+        {deactivate || !isNonEmptyString(reading) ? char : <ruby>{char}<rp></rp><rt>{reading}</rt><rp></rp></ruby> }
     </div>)
 }
 
