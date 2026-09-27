@@ -5,3 +5,8 @@
     '游ゴシック', '游ゴシック体', YuGothic, 'Yu Gothic', 'メイリオ', Meiryo, 'ＭＳ ゴシック',
     'MS Gothic', HiraKakuProN-W3, 'MotoyaLCedar', 'Droid Sans Japanese', sans-serif;
 }
+/* Let the browser skip layout and painting of the paragraphs outside the screen (long texts) */
+.paragraph {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3em;
+}

@@ -14,14 +14,13 @@
   "dependencies": {
     "@serwist/turbopack": "^9.5.12",
     "bootstrap": "^5.3.8",
-    "kuroshiro": "^1.2.0",
     "kuroshiro-analyzer-kuromoji": "^1.1.0",
     "next": "^16.3.6",
+    "papaparse": "^5",
     "react": "^19.3.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.3.0",
-    "react-icons": "^5.7.0",
-    "react-papaparse": "^4.4.0"
+    "react-icons": "^5.7.0"
   },
   "devDependencies": {
     "@swc/core": "^1.16.2",

@@ -4,7 +4,6 @@ import { readFileAsync, arrayBufferToString } from "../utils/files";
 
 export function UploadDownload({ label, setFile, downloadName, downloadContent, ...props }) {
     async function uploadHandler(event) {
-        event.persist();
 
         // TODO: add a file size limit with some error handling?
         let contentBuffer = await readFileAsync(event.target.files[0]);
