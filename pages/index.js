@@ -7,6 +7,7 @@ import { defaultCSV } from "../utils/const";
 import { isNonEmptyString } from "../utils/util";
 import { useDebouncedValue } from "../utils/hooks";
 import { createTokenizer } from "../utils/tokenizer";
+import { fetchStartedReadings, WaniKaniError } from "../utils/wanikani";
 import { loadItem, saveItem } from "../utils/storage";
 import { vocabReducer, initialVocabState, vocabStateToCsv } from "../utils/vocab";
 import { SettingsCard } from "../components/settings";
@@ -61,6 +62,28 @@ export default function Home({ hideSettings }) {
     // Only generate the CSV text while the readings tab is shown, not on every toggle
     const showCsv = !hideSettings && settingTab === "readings"
     const csvText = useMemo(() => showCsv ? vocabStateToCsv(vocabState) : "", [showCsv, vocabState])
+
+    // ---------- WaniKani import ----------
+    const [importStatus, setImportStatus] = useState(null);  // { state: "running" | "done" | "error", message }
+    const importFromWaniKani = useCallback(async () => {
+        const token = apiKey.trim()
+        if (!token) return
+        saveItem("wanikani-api-key", token)
+        setImportStatus({ state: "running", message: "Connecting to WaniKani…" })
+        try {
+            const { entries, items } = await fetchStartedReadings(token, {
+                onProgress: (message) => setImportStatus({ state: "running", message }),
+            })
+            dispatch({ type: "add-readings", entries })
+            setImportStatus({ state: "done", message: `Imported the readings of the ${items} kanji and words you have started.` })
+        } catch (error) {
+            console.error(error)
+            setImportStatus({
+                state: "error",
+                message: error instanceof WaniKaniError ? error.message : "Could not reach WaniKani: check your connection and try again.",
+            })
+        }
+    }, [apiKey])
     // -----------------------------------------------
 
 
@@ -91,6 +114,7 @@ export default function Home({ hideSettings }) {
         const storedCSV = loadItem("csv")
         dispatch({ type: "load-csv", csv: isNonEmptyString(storedCSV) ? storedCSV : defaultCSV })
         setText(loadItem("text") ?? "")
+        setApiKey(loadItem("wanikani-api-key") ?? "")
         setLoaded(true)
     }, [])
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -136,6 +160,8 @@ export default function Home({ hideSettings }) {
                         onCsvUpload={uploadCsv}
                         apiKey={apiKey}
                         onApiKeyChange={setApiKey}
+                        onImport={importFromWaniKani}
+                        importStatus={importStatus}
                         disabled={!analyzer}
                     />
                 }

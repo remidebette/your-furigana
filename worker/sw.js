@@ -1,5 +1,5 @@
 import { defaultCache } from '@serwist/turbopack/worker'
-import { CacheableResponsePlugin, CacheFirst, Serwist } from 'serwist'
+import { CacheableResponsePlugin, CacheFirst, NetworkOnly, Serwist } from 'serwist'
 
 const DICT_CACHE = 'ipadic-dict'
 const DICT_FILES = [
@@ -23,6 +23,11 @@ const serwist = new Serwist({
                 cacheName: DICT_CACHE,
                 plugins: [new CacheableResponsePlugin({ statuses: [200] })],
             }),
+        },
+        // WaniKani API: personal data fetched with the user's token, never cached
+        {
+            matcher: ({ url }) => url.hostname === 'api.wanikani.com',
+            handler: new NetworkOnly(),
         },
         ...defaultCache,
     ],

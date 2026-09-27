@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { Form, Card, Nav } from "react-bootstrap"
+import { Alert, Button, Card, Form, Nav, Spinner } from "react-bootstrap"
 import { UploadDownload } from "./files"
 
 // File names get the time of the download
@@ -12,7 +12,7 @@ export const SettingsCard = memo(function SettingsCard({
     tab, onTabChange,
     text, onTextChange,
     csvText, onCsvChange, onCsvUpload,
-    apiKey, onApiKeyChange,
+    apiKey, onApiKeyChange, onImport, importStatus,
     disabled
 }) {
     return (
@@ -30,14 +30,15 @@ export const SettingsCard = memo(function SettingsCard({
                         <Nav.Link eventKey="readings">Readings</Nav.Link>
                     </Nav.Item>
                     <Nav.Item>
-                        <Nav.Link eventKey="wanikani" disabled
-                        >
-                            Wanikani
-                        </Nav.Link>
+                        <Nav.Link eventKey="wanikani">WaniKani</Nav.Link>
                     </Nav.Item>
                 </Nav>
             </Card.Header>
-            <Form>
+            <Form onSubmit={(event) => {
+                // No page reload: Enter in the token field starts the import
+                event.preventDefault()
+                if (tab === "wanikani") onImport()
+            }}>
                 {(function () {
                     switch (tab) {
                         case "text":
@@ -93,7 +94,7 @@ export const SettingsCard = memo(function SettingsCard({
                                             disabled={disabled}
                                         />
                                         <Form.Text id="ControlTextarea1" muted>
-                                            A list of kanjis and readings to ignore, in the format &quot;kanji,reading1;reading2;reading3&quot;
+                                            The readings you know, one kanji or word per line: &quot;kanji,reading1;reading2&quot;. A reading starting with &quot;-&quot; forces the furigana of a word whose kanji you know.
                                         </Form.Text>
                                     </Form.Group>
                                 </Card.Body>
@@ -112,18 +113,39 @@ export const SettingsCard = memo(function SettingsCard({
                         case "wanikani":
                             return <>
                                 <Card.Body>
-                                    <Form.Group controlId="exampleForm.ControlInput1">
-                                        <Form.Label>API Key</Form.Label>
+                                    <Form.Group controlId="wanikaniApiKey" className="mb-3">
+                                        <Form.Label>WaniKani API token</Form.Label>
                                         <Form.Control
-                                            placeholder="API Key"
-                                            aria-label="API Key"
-                                            aria-describedby="api-key"
-                                            required
+                                            type="password"
+                                            autoComplete="off"
+                                            placeholder="Paste your API token"
                                             name="apiKey"
                                             value={apiKey}
                                             onChange={(event) => onApiKeyChange(event.target.value)}
                                         />
+                                        <Form.Text muted>
+                                            Create a token (the default read-only permissions are enough) in your{" "}
+                                            <a href="https://www.wanikani.com/settings/personal_access_tokens" target="_blank" rel="noreferrer">
+                                                WaniKani settings
+                                            </a>. It is kept in this browser and only sent to WaniKani.
+                                        </Form.Text>
                                     </Form.Group>
+                                    <Button type="submit" disabled={!apiKey.trim() || importStatus?.state === "running"}>
+                                        {importStatus?.state === "running" && <Spinner size="sm" className="me-2" />}
+                                        Import my progress
+                                    </Button>
+                                    <Form.Text muted className="d-block mt-2">
+                                        Adds the readings of every kanji and word you have started on WaniKani to your
+                                        readings. Your own changes are kept: import again whenever you level up.
+                                    </Form.Text>
+                                    {importStatus && importStatus.state !== "running" &&
+                                        <Alert variant={importStatus.state === "error" ? "danger" : "success"} className="mt-3 mb-0">
+                                            {importStatus.message}
+                                        </Alert>
+                                    }
+                                    {importStatus?.state === "running" &&
+                                        <Form.Text className="d-block mt-2">{importStatus.message}</Form.Text>
+                                    }
                                 </Card.Body>
                             </>
                     }

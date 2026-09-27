@@ -9,6 +9,7 @@ import {
     isNonEmptyString
 } from "../utils/util";
 import { splitFurigana } from "../utils/furigana";
+import { isKnownReading } from "../utils/known";
 
 // A segment is either a plain string, or { text, reading } for kanji that can get furigana.
 // Adjacent plain strings are merged to keep the number of rendered nodes low.
@@ -75,11 +76,13 @@ const JapaneseChar = memo(function JapaneseChar({ char, reading, known, onToggle
 
 // Re-render a paragraph only if its text changed or one of its kanji was toggled
 // (a toggle replaces the Set of that kanji only, see utils/vocab.js)
+// A word's known state depends on its own entry and on each of its kanji (utils/known.js)
 function sameParagraph(prev, next) {
     if (prev.segments !== next.segments || prev.onToggle !== next.onToggle) return false
     if (prev.knownReadings === next.knownReadings) return true
+    const same = (key) => prev.knownReadings.get(key) === next.knownReadings.get(key)
     return next.segments.every((segment) => typeof segment === "string"
-        || prev.knownReadings.get(segment.text) === next.knownReadings.get(segment.text))
+        || (same(segment.text) && [...segment.text].every(same)))
 }
 
 const Paragraph = memo(function Paragraph({ segments, knownReadings, onToggle }) {
@@ -92,7 +95,7 @@ const Paragraph = memo(function Paragraph({ segments, knownReadings, onToggle })
                     key={i}
                     char={segment.text}
                     reading={segment.reading}
-                    known={knownReadings.get(segment.text)?.has(segment.reading) ?? false}
+                    known={isKnownReading(knownReadings, segment.text, segment.reading)}
                     onToggle={onToggle}
                 />
             )}
