@@ -66,9 +66,9 @@ export async function segmentText(analyzer, text, cache) {
 }
 
 // Only re-renders when its own known state changes, not when another reading is toggled
-const JapaneseChar = memo(function JapaneseChar({ char, reading, known, onToggle }) {
+const JapaneseChar = memo(function JapaneseChar({ char, reading, known, afterKanji, onToggle }) {
     return (
-        <span onClick={() => onToggle(char, reading)}>
+        <span onClick={() => onToggle(char, reading, afterKanji)}>
             {known ? char : <ruby>{char}<rt>{reading}</rt></ruby>}
         </span>
     )
@@ -89,16 +89,19 @@ const Paragraph = memo(function Paragraph({ segments, knownReadings, onToggle })
     if (segments.length === 0) return <div className={styles.paragraph}><br /></div>
     return (
         <div className={styles.paragraph}>
-            {segments.map((segment, i) => typeof segment === "string"
-                ? segment
-                : <JapaneseChar
+            {segments.map((segment, i) => {
+                if (typeof segment === "string") return segment
+                // Directly after another kanji word (no kana between): its first kana can be voiced
+                const afterKanji = typeof segments[i - 1] === "object"
+                return <JapaneseChar
                     key={i}
                     char={segment.text}
                     reading={segment.reading}
-                    known={isKnownReading(knownReadings, segment.text, segment.reading)}
+                    known={isKnownReading(knownReadings, segment.text, segment.reading, afterKanji)}
+                    afterKanji={afterKanji}
                     onToggle={onToggle}
                 />
-            )}
+            })}
         </div>
     )
 }, sameParagraph)
