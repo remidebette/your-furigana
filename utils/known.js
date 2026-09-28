@@ -5,7 +5,8 @@
 //
 // Besides exact entries, a compound counts as known when its reading can be built from known
 // readings of each of its kanji: 学校 (がっこう) from 学 (がく) and 校 (こう), allowing for the
-// usual sound changes (がく -> がっ, ほん -> ぼん).
+// usual sound changes (がく -> がっ, ほん -> ぼん). The same voicing applies to a word right after
+// another kanji word: 真夏 + 日 (び) is known with 日 (ひ).
 
 export const EXCEPTION_PREFIX = "-";
 
@@ -20,18 +21,19 @@ const SEMI_VOICED = { "は": "ぱ", "ひ": "ぴ", "ふ": "ぷ", "へ": "ぺ", "�
 // Sokuon: a reading ending in つ, く, ち or き can become っ before another kanji (学校 -> がっこう)
 const GEMINATING = new Set(["つ", "く", "ち", "き"]);
 
-function variants(reading, isFirst, isLast) {
+// Forms a known reading can take: voiced when a kanji precedes it, っ when a kanji follows it
+function variants(reading, canBeVoiced, canGeminate) {
     const starts = [reading];
-    if (!isFirst) {
+    if (canBeVoiced) {
         for (const table of [VOICED, SEMI_VOICED]) {
             if (table[reading[0]]) starts.push(table[reading[0]] + reading.slice(1));
         }
     }
-    if (isLast || reading.length < 2 || !GEMINATING.has(reading[reading.length - 1])) return starts;
+    if (!canGeminate || reading.length < 2 || !GEMINATING.has(reading[reading.length - 1])) return starts;
     return [...starts, ...starts.map((r) => r.slice(0, -1) + "っ")];
 }
 
-function composable(known, word, reading) {
+function composable(known, word, reading, afterKanji) {
     const chars = [...word];
     if (chars.length < 2) return false;
     // 々 repeats the previous kanji (人々)
@@ -45,7 +47,7 @@ function composable(known, word, reading) {
         if (index === kanji.length) return position === reading.length;
         const key = index * 1000 + position;
         if (failed.has(key)) return false;
-        const found = readingsOf[index].some((r) => variants(r, index === 0, index === kanji.length - 1)
+        const found = readingsOf[index].some((r) => variants(r, index > 0 || afterKanji, index < kanji.length - 1)
             .some((v) => reading.startsWith(v, position) && fits(index + 1, position + v.length)));
         if (!found) failed.add(key);
         return found;
@@ -53,8 +55,13 @@ function composable(known, word, reading) {
     return fits(0, 0);
 }
 
-export function isKnownReading(known, word, reading) {
+// afterKanji: the word directly follows another kanji word, so its first kana can be voiced
+// (真夏 + 日 read び, 世紀 + 頃 read ごろ)
+export function isKnownReading(known, word, reading, afterKanji = false) {
     const readings = known.get(word);
     if (readings?.has(EXCEPTION_PREFIX + reading)) return false;
-    return Boolean(readings?.has(reading)) || composable(known, word, reading);
+    if (readings?.has(reading)) return true;
+    if (afterKanji && readings && [...readings].some((r) =>
+        !r.startsWith(EXCEPTION_PREFIX) && variants(r, true, false).includes(reading))) return true;
+    return composable(known, word, reading, afterKanji);
 }

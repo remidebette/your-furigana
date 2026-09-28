@@ -105,3 +105,14 @@ describe('add-readings', () => {
         expect(added.known.get('日')).toBe(state.known.get('日'))
     })
 })
+
+describe('toggle after a kanji word', () => {
+    it('shows the furigana of a voiced reading known through the plain one, then hides it again', () => {
+        const state = vocabReducer(initialVocabState, { type: 'load-csv', csv: '日,ひ' })
+        const shown = vocabReducer(state, { type: 'toggle', char: '日', reading: 'び', afterKanji: true })
+        expect(isKnownReading(shown.known, '日', 'び', true)).toBe(false)
+        expect(vocabStateToCsv(shown)).toBe('日,ひ;-び')
+        const hidden = vocabReducer(shown, { type: 'toggle', char: '日', reading: 'び', afterKanji: true })
+        expect(vocabStateToCsv(hidden)).toBe('日,ひ')
+    })
+})

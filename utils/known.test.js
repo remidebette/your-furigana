@@ -29,4 +29,21 @@ describe('isKnownReading', () => {
         const k = known({ '学': ['がく'], '校': ['こう'], '学校': ['-がっこう'] })
         expect(isKnownReading(k, '学校', 'がっこう')).toBe(false)
     })
+
+    it('voices the first kana of a word right after another kanji word', () => {
+        const k = known({ '日': ['ひ', 'にち'], '頃': ['ころ'], '寿司': ['すし'], '稲': ['いね'], '沿': ['そ'] })
+        expect(isKnownReading(k, '日', 'び', true)).toBe(true)        // 真夏 + 日
+        expect(isKnownReading(k, '頃', 'ごろ', true)).toBe(true)      // 世紀 + 頃
+        expect(isKnownReading(k, '寿司', 'ずし', true)).toBe(true)    // 稲荷 + 寿司
+        expect(isKnownReading(k, '日', 'び')).toBe(false)             // not after a kanji word
+        expect(isKnownReading(k, '沿', 'ぞ', true)).toBe(true)
+        expect(isKnownReading(k, '日', 'ぴ', true)).toBe(true)        // semi-voiced
+        expect(isKnownReading(k, '日', 'じつ', true)).toBe(false)     // not a sound change of a known reading
+    })
+
+    it('voices the first kanji of a compound right after another kanji word', () => {
+        const k = known({ '島': ['しま'], '国': ['くに'] })
+        expect(isKnownReading(k, '島国', 'じまぐに', true)).toBe(true)
+        expect(isKnownReading(k, '島国', 'じまぐに')).toBe(false)
+    })
 })

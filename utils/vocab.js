@@ -51,15 +51,15 @@ export function knownToCsv(known) {
 
 // Returns a new Map where only the toggled word has a new Set:
 // the other entries keep their identity, so unaffected paragraphs don't re-render.
-function toggleReading(known, word, reading) {
-    const wasKnown = isKnownReading(known, word, reading)
+function toggleReading(known, word, reading, afterKanji) {
+    const wasKnown = isKnownReading(known, word, reading, afterKanji)
     const readings = new Set(known.get(word))
     readings.delete(reading)
     readings.delete(EXCEPTION_PREFIX + reading)
     const newKnown = new Map(known)
     newKnown.set(word, readings)
     // Known through its kanji (学校 from 学 and 校): only an exception shows its furigana again
-    const knownWithoutEntry = isKnownReading(newKnown, word, reading)
+    const knownWithoutEntry = isKnownReading(newKnown, word, reading, afterKanji)
     if (wasKnown && knownWithoutEntry) readings.add(EXCEPTION_PREFIX + reading)
     if (!wasKnown && !knownWithoutEntry) readings.add(reading)
     if (!readings.size) newKnown.delete(word)
@@ -84,10 +84,11 @@ export function vocabReducer(state, action) {
         case 'parse-csv':
             return state.edited ? { ...state, known: csvToKnown(state.csv), edited: false } : state
         // Click on a kanji: mark the reading as known, or unknown again
+        // (afterKanji: the word follows another kanji word, see utils/known.js)
         case 'toggle': {
             // Apply pending edits of the textarea first, so they are not lost
             const known = state.edited ? csvToKnown(state.csv) : state.known
-            return { csv: null, known: toggleReading(known, action.char, action.reading), edited: false }
+            return { csv: null, known: toggleReading(known, action.char, action.reading, action.afterKanji), edited: false }
         }
         // Import (e.g. from WaniKani): only adds readings, manual changes are kept
         case 'add-readings': {

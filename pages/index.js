@@ -41,7 +41,7 @@ export default function Home({ hideSettings }) {
     // ------------ Known readings ----------------
     const [vocabState, dispatch] = useReducer(vocabReducer, initialVocabState);
     const knownReadings = vocabState.known;
-    const onToggle = useCallback((char, reading) => dispatch({ type: "toggle", char, reading }), []);
+    const onToggle = useCallback((char, reading, afterKanji) => dispatch({ type: "toggle", char, reading, afterKanji }), []);
 
     // Stable callbacks, so the memoized <SettingsCard> skips re-rendering on toggles
     const csvParseTimeout = useRef(null)
